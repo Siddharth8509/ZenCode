@@ -15,26 +15,32 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: process.env.CLIENT_URL,
+    origin: function (origin, callback) {
+        const allowedOrigins = [process.env.CLIENT_URL];
+        if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:')) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
 }));
 
 const port = process.env.PORT || 3000
-async function connection()
-{
+async function connection() {
     await redisClient.connect();
     console.log("Redis client is connected");
 
     await dbConnection();
     console.log("Connected to database");
 
-    app.listen(port ,()=>{
+    app.listen(port, () => {
         console.log(`Server is running on port no. ${port}`);
     })
 }
 
 connection();
 
-app.use("/user",authRouter);
-app.use("/problem",problemRouter);
-app.use("/submission",submissionRouter);
+app.use("/user", authRouter);
+app.use("/problem", problemRouter);
+app.use("/submission", submissionRouter);

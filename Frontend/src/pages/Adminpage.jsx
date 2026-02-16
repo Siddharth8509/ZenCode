@@ -1,391 +1,374 @@
-import {z} from "zod";
+import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm,useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import axiosClient from "../utils/axiosClient";
-
+import Navbar from "../components/Navbar";
 
 const adminSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
   companies: z
-              .string()
-              .transform((val)=>
-                val.split(",").map(c => c.trim()).filter(Boolean)
-              )
-              .refine( arr => arr.length > 0 , "At least one company required"),
+    .string()
+    .transform((val) =>
+      val.split(",").map(c => c.trim()).filter(Boolean)
+    )
+    .refine(arr => arr.length > 0, "At least one company required"),
   description: z.string().trim().min(1),
-  difficulty: z.enum(["easy", "medium", "hard"]),
-  tags: z.enum([
-  "Array",
-  "HashTable",
-  "LinkedList",
-  "Stack",
-  "Queue",
-  "Tree",
-  "Graph",
-  "Trie",
-  "BinarySearch",
-  ]),
-
-  examples: z.array(
-    z.object({
-      input: z.string().trim().min(1, "Input is required"),
-      output: z.string().trim().min(1, "Output is required"),
-      explanation: z.string().trim().min(1, "Explanation is required"),
-    })
-  ).min(1, "At least one example is required"),
-
-  visibleTestCase: z.array(
-    z.object({
-      input: z.string().trim().min(1, "Input is required"),
-      output: z.string().trim().min(1, "Output is required"),
-    })
-  ).min(1, "At least one visible test case is required"),
-
-  hiddenTestCase: z.array(
-    z.object({
-      input: z.string().trim().min(1, "Input is required"),
-      output: z.string().trim().min(1, "Output is required"),
-    })
-  ).min(1, "At least one hidden test case is required"),
-
-  referenceSolution: z.array(
-    z.object({
-      language: z.enum(["cpp", "java", "javascript", "python"]),
-      solution: z.string().trim().min(1, "Solution is required"),
-    })
-  ).length(4, "Reference solution is required"),
-
-  initialCode: z.array(
-    z.object({
-      language: z.enum(["cpp", "java", "javascript", "python"]),
-      code: z.string().trim().min(1, "Code is required"),
-    })
-  ).length(4, "Initial code is required"),
+  difficulty: z.string().min(1),
+  tags: z.preprocess(
+    (val) => (Array.isArray(val) ? val : typeof val === "string" ? [val] : []),
+    z.array(z.string()).min(1, "At least one tag required")
+  ),
+  hints: z.preprocess(
+    (val) => (Array.isArray(val) ? val.map((v) => String(v)) : []),
+    z.array(z.string())
+  ),
+  constraints: z.string().trim().min(1),
+  examples: z
+    .array(
+      z.object({
+        input: z.string().trim().min(1, "Input required"),
+        output: z.string().trim().min(1, "Output required"),
+        explanation: z.string().optional().default("")
+      })
+    )
+    .min(1, "At least one example required"),
+  testCases: z
+    .array(
+      z.object({
+        input: z.string().trim().min(1, "Input required"),
+        expectedOutput: z.string().trim().min(1, "Expected output required"),
+      })
+    )
+    .min(1, "At least one test case required"),
+  initialCode: z
+    .array(
+      z.object({
+        language: z.string().trim().min(1, "Language required"),
+        code: z.string().trim().min(1, "Code required"),
+      })
+    )
+    .min(1, "At least one language code required"),
 });
 
-export default function Adminpage()
-{
-     const { register, handleSubmit, control ,formState: { errors }, } = useForm({ resolver: zodResolver(adminSchema),
+const TAG_OPTIONS = [
+  "array", "binary-search", "linked-list", "stack", "hash-table",
+  "sorting", "tree", "graph", "dynamic-programming", "greedy",
+  "backtracking", "recursion", "sliding-window", "two-pointers", "math"
+];
+
+export default function Adminpage() {
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+    reset,
+  } = useForm({
+    resolver: zodResolver(adminSchema),
     defaultValues: {
-      examples: [
-        { input: "", output: "", explanation: "" },
-        { input: "", output: "", explanation: "" },
-      ],
-      visibleTestCase: [
-        { input: "", output: "" },
-        { input: "", output: "" },
-      ],
-      hiddenTestCase: [
-        { input: "", output: "" },
-        { input: "", output: "" },
-      ],
-      referenceSolution: [
-        { language: "cpp", solution: "" },
-        { language: "java", solution: "" },
-        { language: "javascript", solution: "" },
-        { language: "python", solution: "" },
-      ],
-      initialCode: [
-        { language: "cpp", code: "" },
-        { language: "java", code: "" },
-        { language: "javascript", code: "" },
-        { language: "python", code: "" },
-      ],
+      title: "",
+      companies: "",
+      description: "",
+      difficulty: "easy",
+      tags: [],
+      hints: [],
+      constraints: "",
+      examples: [{ input: "", output: "", explanation: "" }],
+      testCases: [{ input: "", expectedOutput: "" }],
+      initialCode: [{ language: "cpp", code: "" }],
     },
   });
-    
-    const { fields: exampleFields, append: addExample, remove: removeExample } = useFieldArray({ control, name: "examples"});
-    const { fields: visibleTestCaseFields, append: addVisibleTestCase, remove: removeVisibleTestCase } = useFieldArray({ control, name: "visibleTestCase" });
-    const { fields: hiddenTestCaseFields, append: addHiddenTestCase, remove: removeHiddenTestCase } = useFieldArray({ control, name: "hiddenTestCase" });
 
+  const {
+    fields: exampleFields,
+    append: appendExample,
+    remove: removeExample,
+  } = useFieldArray({ control, name: "examples" });
 
-    const onSubmit = async (data) => {
+  const {
+    fields: testCaseFields,
+    append: appendTestCase,
+    remove: removeTestCase,
+  } = useFieldArray({ control, name: "testCases" });
+
+  const {
+    fields: hintFields,
+    append: appendHint,
+    remove: removeHint,
+  } = useFieldArray({ control, name: "hints" });
+
+  const {
+    fields: codeFields,
+    append: appendCode,
+    remove: removeCode,
+  } = useFieldArray({ control, name: "initialCode" });
+
+  const onSubmit = async (data) => {
     try {
-      const res = await axiosClient.post("/problem/create", data);
-      console.log("Problem created:", res.data);
-    } catch (error) {
-      console.error(error.response?.data?.message || error.message);
+      await axiosClient.post("/problem/createProblem", data);
+      reset();
+      alert("Problem created!");
+    } catch (e) {
+      console.error(e);
+      alert("Error creating problem");
     }
   };
-  
-    return(
-        
-        <div className="min-h-screen flex flex-col">
 
-            <div className="bg-amber-600 container mx-auto w-[80vw] mt-10 min-h-[80vh] rounded-4xl">
-                
-                <form className="flex flex-col" onSubmit={handleSubmit(onSubmit)}>
-                <div className="p-10">
-                    
-                    {/* Title */}
-                    <div className="flex gap-2 items-center">
-                        <p className="text-xl font-bold">Title :</p>
-                        <input {...register("title")} className="bg-black p-2 rounded-xl" />
-                        <p className="text-red-400 text-sm">{errors.title?.message}</p>
-                    </div>
-                     
-                     {/* Difficulty */}
-                    <div className="flex gap-2 items-center mt-5">
-                    <p className="text-xl font-bold">Difficulty :</p>
-                    <select {...register("difficulty")} className="select w-60 rounded-2xl">
-                      <option value="" disabled hidden>Select difficulty</option>
-                        <option value="easy">easy</option>
-                        <option value="medium">medium</option>
-                        <option value="hard">hard</option>
-                    </select>
-                    <p className="text-red-400 text-sm">{errors.difficulty?.message}</p>
-                    </div>
-                    
-                    {/* Tags */}
-                    <div className="flex gap-2 items-center mt-5">
-                    <p className="text-xl font-bold">Tags : </p>
-                    <select className="select w-60 rounded-2xl" {...register("tags")}>
-                            <option value="Array">Array</option>
-                            <option value="HashTable">HashTable</option>
-                            <option value="LinkedList">Linked-List</option>
-                            <option value="Stack">Stack</option>
-                            <option value="Queue">Queue</option>
-                            <option value="Tree">Tree</option>
-                            <option value="Graph">Graph</option>
-                            <option value="Trie">Trie</option>
-                            <option value="BinarySearch">Binary Search</option>
-                        </select>
-                        <p className="text-red-400 text-sm">{errors.tags?.message}</p>
-                    </div>
-                    
-                    {/* Companies */}
-                    <div className="flex gap-2 items-center mt-5">
-                        <p className="text-xl font-bold">Companies : </p>
-                        <input type="text" {...register("companies")} className="bg-black p-2 rounded-xl"></input>
-                        <p className="text-red-400 text-sm">{errors.companies?.message}</p>
-                    </div>
+  return (
+    <div className="min-h-screen bg-slate-950 text-white selection:bg-orange-500/20 pb-24">
+      <Navbar />
 
-                    {/* Description */}
-                    <div className="flex gap-2  mt-5">
-                        <p className="text-xl font-bold">Description : </p>
-                        <textarea {...register("description")} className="bg-black p-2 rounded-xl w-70 min-h-40"></textarea>
-                        <p className="text-red-400 text-sm">{errors.description?.message}</p>
-                    </div>
-                    
-                    {/* Example */}
-                    <div className="flex gap-2  mt-5">
-                      <p className="text-xl font-bold">Example : </p>
-                      
-                      <div className="flex flex-col gap-4">
-                      {exampleFields.map((field, index) => (
-                        <div key={field.id} className="flex flex-col bg-gray-500 p-4 rounded-2xl gap-2">
+      {/* Background */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute top-[-15%] left-[-10%] w-[50%] h-[50%] bg-orange-400/30 blur-[150px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-rose-400/30 blur-[150px] rounded-full" />
+      </div>
 
-                          <input {...register(`examples.${index}.input`)} placeholder="Input" className="bg-black p-2 rounded-xl"/>
-                          <p className="text-red-400 text-sm"> {errors?.examples?.[index]?.input?.message} </p>
+      <div className="container mx-auto px-6 pt-24 relative z-10">
+        <h1 className="text-4xl font-semibold text-center mb-4 bg-gradient-to-r from-orange-500 via-red-500 to-amber-500 bg-clip-text text-transparent">
+          Admin Panel
+        </h1>
+        <p className="text-center text-slate-400 mb-10">Create and manage problems for ZenCode.</p>
 
-                          <input {...register(`examples.${index}.output`)} placeholder="Output" className="bg-black p-2 rounded-xl" />
-                          <p className="text-red-400 text-sm"> {errors?.examples?.[index]?.output?.message} </p>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto">
 
-                          <textarea {...register(`examples.${index}.explanation`)} placeholder="Explanation" className="bg-black p-2 rounded-xl min-h-20"/>
-                          <p className="text-red-400 text-sm"> {errors?.examples?.[index]?.explanation?.message} </p>
-
-                          {exampleFields.length > 1 && (
-                            <button type="button" onClick={() => removeExample(index)} className="text-red-300 self-end">
-                              Remove
-                            </button>
-                          )}
-                        </div>
-                      ))}
-
-                      <button type="button" onClick={() => addExample({ input: "", output: "", explanation: "" })} className="btn w-fit">
-                        + Add Example
-                      </button>
-                    </div>
-
-                    </div>
-
-                    {/* Visible Test Cases */}
-                    <div className="flex gap-2  mt-5">
-                        <p className="text-xl font-bold">Visible Test Cases : </p>
-
-                        <div className="flex flex-col gap-4">
-                        
-                        {visibleTestCaseFields.map((field,index) => (
-                          <div key={field.id} className="flex flex-col bg-gray-500 p-4 rounded-2xl gap-2">
-                            
-                            <input placeholder="Input" {...register(`visibleTestCase.${index}.input`)} className="bg-black p-2 rounded-xl"></input>
-                            <p className="text-red-400 text-sm"> {errors?.visibleTestCase?.[index]?.input?.message} </p>
-
-                            <input placeholder="Output" {...register(`visibleTestCase.${index}.output`)} className="bg-black p-2 rounded-xl"></input>
-                            <p className="text-red-400 text-sm"> {errors?.visibleTestCase?.[index]?.output?.message} </p>
-
-                            {visibleTestCaseFields.length > 1 && (
-                            <button type="button" onClick={() => removeVisibleTestCase(index)} className="text-red-300 self-end">
-                              Remove
-                            </button>
-                          )}
-                          </div>
-                        ))}
-
-                        <button className="btn" type="button" onClick={() => addVisibleTestCase({ input: "", output: "" })}>
-                          + Add visible test case 
-                        </button>
-
-                        </div>
-
-                    </div>
-
-                    {/* Hidden Test Cases */}
-                    <div className="flex gap-2  mt-5">
-                        <p className="text-xl font-bold">Hidden Test Cases : </p>
-
-                        <div className="flex flex-col gap-4">
-                        
-                        {hiddenTestCaseFields.map((field,index) => (
-                          <div key={field.id} className="flex flex-col bg-gray-500 p-4 rounded-2xl gap-2">
-                            
-                            <input placeholder="Input" {...register(`hiddenTestCase.${index}.input`)} className="bg-black p-2 rounded-xl"></input>
-                            <p className="text-red-400 text-sm"> {errors?.hiddenTestCase?.[index]?.input?.message} </p>
-
-                            <input placeholder="Output" {...register(`hiddenTestCase.${index}.output`)} className="bg-black p-2 rounded-xl"></input>
-                            <p className="text-red-400 text-sm"> {errors?.hiddenTestCase?.[index]?.output?.message} </p>
-
-                            {hiddenTestCaseFields.length > 1 && (
-                            <button type="button" onClick={() => removeHiddenTestCase(index)} className="text-red-300 self-end">
-                              Remove
-                            </button>
-                          )}
-                          </div>
-                        ))}
-
-                        <button className="btn" type="button" onClick={() => addHiddenTestCase({ input: "", output: "" })}>
-                          + Add visible test case 
-                        </button>
-
-                        </div>
-
-                    </div>
-
-                    {/* Reference Solution */}
-                    <div>
-
-                    <p className="text-xl font-bold mt-5">Reference Solution : </p>
-                    
-                    <div className="mt-5 grid grid-flow-col-dense grid-rows-2 gap-8 max-w-fit">
-
-                        <div className="flex flex-col bg-gray-500  p-4 rounded-2xl gap-4">
-                            
-                            <input type="hidden" value="cpp" {...register("referenceSolution.0.language")} />
-                            <p className="font-bold">C++</p>
-                            <div className="flex flex-col gap-2">
-                            <p>Reference Solution : </p>
-                            <textarea type="text" {...register("referenceSolution.0.solution")} className="bg-black p-2 rounded-xl min-h-40 min-w-60"></textarea>
-                            <p className="text-red-400 text-sm">{errors?.referenceSolution?.[0]?.solution?.message}</p>
-                            </div>
-
-                        </div>
-
-                       <div className="flex flex-col bg-gray-500  p-4 rounded-2xl gap-4">
-                            
-                            <input type="hidden" value="java" {...register("referenceSolution.1.language")} />
-                            <p className="font-bold">Java</p>
-                            <div className="flex flex-col gap-2">
-                            <p>Reference Solution : </p>
-                            <textarea type="text" {...register("referenceSolution.1.solution")} className="bg-black p-2 rounded-xl min-h-40 min-w-60"></textarea>
-                            <p className="text-red-400 text-sm">{errors?.referenceSolution?.[1]?.solution?.message}</p>
-                            </div>
-                            
-                        </div>
-
-                        <div className="flex flex-col bg-gray-500  p-4 rounded-2xl gap-4">
-                            
-                            <input type="hidden" value="javascript" {...register("referenceSolution.2.language")} />
-                            <p className="font-bold">JavaScript</p>
-                            <div className="flex flex-col gap-2">
-                            <p>Reference Solution : </p>
-                            <textarea type="text" {...register("referenceSolution.2.solution")} className="bg-black p-2 rounded-xl min-h-40 min-w-60"></textarea>
-                            <p className="text-red-400 text-sm">{errors?.referenceSolution?.[2]?.solution?.message}</p>
-                            </div>
-                            
-                        </div>
-
-                        <div className="flex flex-col bg-gray-500  p-4 rounded-2xl gap-4">
-                            
-                            <input type="hidden" value="python" {...register("referenceSolution.3.language")} />
-                            <p className="font-bold">Python</p>
-                            <div className="flex flex-col gap-2">
-                            <p>Reference Solution : </p>
-                            <textarea type="text" {...register("referenceSolution.3.solution")} className="bg-black p-2 rounded-xl min-h-40 min-w-60"></textarea>
-                            <p className="text-red-400 text-sm">{errors?.referenceSolution?.[3]?.solution?.message}</p>
-                            </div>
-                            
-                        </div>
-
-                    </div>
-
-                    </div>
-
-                    {/* Initial Codes */}
-                    <div>
-
-                    <p className="text-xl font-bold mt-5">Initial Codes : </p>
-                    
-                    <div className="mt-5 grid grid-flow-col-dense grid-rows-2 gap-8 max-w-fit">
-
-                        <div className="flex flex-col bg-gray-500  p-4 rounded-2xl gap-4">
-                            
-                            <input type="hidden" value="cpp" {...register("initialCode.0.language")} />
-                            <p className="font-bold">C++</p>
-                            <div className="flex flex-col gap-2">
-                            <p>Initial Code : </p>
-                            <textarea type="text" {...register("initialCode.0.code")} className="bg-black p-2 rounded-xl min-h-40 min-w-60"></textarea>
-                            <p className="text-red-400 text-sm">{errors?.initialCode?.[0]?.code?.message}</p>
-                            </div>
-
-                        </div>
-
-                       <div className="flex flex-col bg-gray-500  p-4 rounded-2xl gap-4">
-                            
-                            <input type="hidden" value="java" {...register("initialCode.1.language")} />
-                            <p className="font-bold">Java</p>
-                            <div className="flex flex-col gap-2">
-                            <p>Initial Code : </p>
-                            <textarea type="text" {...register("initialCode.1.code")} className="bg-black p-2 rounded-xl min-h-40 min-w-60"></textarea>
-                            </div>
-                            
-                        </div>
-
-                        <div className="flex flex-col bg-gray-500  p-4 rounded-2xl gap-4">
-
-                            <input type="hidden" value="javascript" {...register("initialCode.2.language")} />
-                            <p className="font-bold">JavaScript</p>
-                            <div className="flex flex-col gap-2">
-                            <p>Initial Code : </p>
-                            <textarea type="text" {...register("initialCode.2.code")} className="bg-black p-2 rounded-xl min-h-40 min-w-60"></textarea>
-                            </div>
-                            
-                        </div>
-
-                        <div className="flex flex-col bg-gray-500  p-4 rounded-2xl gap-4">
-
-                            <input type="hidden" value="python" {...register("initialCode.3.language")} />
-                            <p className="font-bold">Python</p>
-                            <div className="flex flex-col gap-2">
-                            <p>Initial Code : </p>
-                            <textarea type="text" {...register("initialCode.3.code")} className="bg-black p-2 rounded-xl min-h-40 min-w-60"></textarea>
-                            </div>
-                            
-                        </div>
-
-                    </div>
-
-                    </div>
-
-                    <div className="flex justify-center mt-10">
-                    <button type="submit" className="btn">Submit</button>
-                    </div>
-
-                </div>
-                </form>
-                
+          {/* Basic Info */}
+          <section className="glass-panel p-6 rounded-2xl border border-white/10 space-y-5">
+            <h2 className="text-lg font-semibold border-l-4 border-orange-500 pl-4">Basic Information</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Title</label>
+                <input
+                  {...register("title")}
+                  className="mt-2 w-full bg-slate-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  placeholder="Problem Title"
+                />
+                <p className="text-red-400 text-xs mt-1">{errors.title?.message}</p>
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Companies (comma separated)</label>
+                <input
+                  {...register("companies")}
+                  className="mt-2 w-full bg-slate-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  placeholder="Google, Amazon"
+                />
+                <p className="text-red-400 text-xs mt-1">{errors.companies?.message}</p>
+              </div>
             </div>
+            <div>
+              <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Description</label>
+              <textarea
+                {...register("description")}
+                rows={4}
+                className="mt-2 w-full bg-slate-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                placeholder="Problem description (supports markdown)"
+              />
+              <p className="text-red-400 text-xs mt-1">{errors.description?.message}</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Difficulty</label>
+                <select
+                  {...register("difficulty")}
+                  className="mt-2 w-full bg-slate-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                >
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Constraints</label>
+                <input
+                  {...register("constraints")}
+                  className="mt-2 w-full bg-slate-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  placeholder="e.g. 1 ≤ n ≤ 10^5"
+                />
+                <p className="text-red-400 text-xs mt-1">{errors.constraints?.message}</p>
+              </div>
+            </div>
+          </section>
 
-        </div>
+          {/* Tags */}
+          <section className="glass-panel p-6 rounded-2xl border border-white/10 space-y-4">
+            <h2 className="text-lg font-semibold border-l-4 border-red-500 pl-4">Tags</h2>
+            <div className="flex flex-wrap gap-3">
+              {TAG_OPTIONS.map((tag) => (
+                <label
+                  key={tag}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900/70 border border-white/10 cursor-pointer hover:border-orange-400/50 transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    {...register("tags")}
+                    value={tag}
+                    className="h-4 w-4 rounded border-white/20 bg-slate-900 text-orange-400 focus:ring-orange-400"
+                  />
+                  <span className="text-sm">{tag}</span>
+                </label>
+              ))}
+            </div>
+            <p className="text-red-400 text-xs mt-1">{errors.tags?.message}</p>
+          </section>
 
-    )
+          {/* Hints */}
+          <section className="glass-panel p-6 rounded-2xl border border-white/10 space-y-4">
+            <h2 className="text-lg font-semibold border-l-4 border-amber-500 pl-4">Hints</h2>
+            {hintFields.map((field, index) => (
+              <div key={field.id} className="flex gap-4 items-center">
+                <input
+                  {...register(`hints.${index}`)}
+                  className="flex-1 bg-slate-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  placeholder={`Hint ${index + 1}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeHint(index)}
+                  className="text-rose-400 hover:text-rose-300 text-sm font-semibold"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => appendHint("")}
+              className="text-orange-400 hover:text-orange-300 text-sm font-semibold"
+            >
+              + Add Hint
+            </button>
+          </section>
+
+          {/* Examples */}
+          <section className="glass-panel p-6 rounded-2xl border border-white/10 space-y-4">
+            <h2 className="text-lg font-semibold border-l-4 border-emerald-500 pl-4">Examples</h2>
+            {exampleFields.map((field, index) => (
+              <div key={field.id} className="p-4 rounded-xl bg-slate-900/70 border border-white/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Example {index + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeExample(index)}
+                    className="text-rose-400 hover:text-rose-300 text-sm font-semibold"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <input
+                  {...register(`examples.${index}.input`)}
+                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  placeholder="Input"
+                />
+                <input
+                  {...register(`examples.${index}.output`)}
+                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  placeholder="Output"
+                />
+                <input
+                  {...register(`examples.${index}.explanation`)}
+                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  placeholder="Explanation (optional)"
+                />
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => appendExample({ input: "", output: "", explanation: "" })}
+              className="text-orange-400 hover:text-orange-300 text-sm font-semibold"
+            >
+              + Add Example
+            </button>
+            <p className="text-red-400 text-xs mt-1">{errors.examples?.message}</p>
+          </section>
+
+          {/* Test Cases */}
+          <section className="glass-panel p-6 rounded-2xl border border-white/10 space-y-4">
+            <h2 className="text-lg font-semibold border-l-4 border-rose-500 pl-4">Test Cases</h2>
+            {testCaseFields.map((field, index) => (
+              <div key={field.id} className="p-4 rounded-xl bg-slate-900/70 border border-white/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Test Case {index + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeTestCase(index)}
+                    className="text-rose-400 hover:text-rose-300 text-sm font-semibold"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <input
+                  {...register(`testCases.${index}.input`)}
+                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  placeholder="Input"
+                />
+                <input
+                  {...register(`testCases.${index}.expectedOutput`)}
+                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  placeholder="Expected Output"
+                />
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => appendTestCase({ input: "", expectedOutput: "" })}
+              className="text-orange-400 hover:text-orange-300 text-sm font-semibold"
+            >
+              + Add Test Case
+            </button>
+            <p className="text-red-400 text-xs mt-1">{errors.testCases?.message}</p>
+          </section>
+
+          {/* Initial Code */}
+          <section className="glass-panel p-6 rounded-2xl border border-white/10 space-y-4">
+            <h2 className="text-lg font-semibold border-l-4 border-orange-500 pl-4">Initial Code Templates</h2>
+            {codeFields.map((field, index) => (
+              <div key={field.id} className="p-4 rounded-xl bg-slate-900/70 border border-white/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Language {index + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeCode(index)}
+                    className="text-rose-400 hover:text-rose-300 text-sm font-semibold"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <select
+                  {...register(`initialCode.${index}.language`)}
+                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                >
+                  <option value="cpp">C++</option>
+                  <option value="java">Java</option>
+                  <option value="python">Python</option>
+                  <option value="javascript">JavaScript</option>
+                </select>
+                <textarea
+                  {...register(`initialCode.${index}.code`)}
+                  rows={4}
+                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-white font-mono text-sm focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  placeholder="Starter code..."
+                />
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => appendCode({ language: "cpp", code: "" })}
+              className="text-orange-400 hover:text-orange-300 text-sm font-semibold"
+            >
+              + Add Language
+            </button>
+            <p className="text-red-400 text-xs mt-1">{errors.initialCode?.message}</p>
+          </section>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            className="w-full py-4 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold text-lg rounded-2xl shadow-xl transition-all"
+          >
+            Create Problem
+          </button>
+        </form>
+      </div>
+    </div>
+  );
 }

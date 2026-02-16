@@ -1,32 +1,46 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import './App.css'
 import Signupform from './pages/Signupform';
 import Loginpage from './pages/Loginpage';
 import Homepage from './pages/Homepage';
-import { Navigate, Route,Routes } from 'react-router';
-import { useDispatch,useSelector } from 'react-redux';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { checkAuth } from './authSlice';
 import Problemset from './pages/Problemset';
-import Adminpage from './pages/adminPage';
+import Adminpage from './pages/Adminpage';
 import Problempage from './pages/Problempage';
+import Leaderboard from './pages/Leaderboard';
+import LearningPath from './pages/LearningPath';
+import Profile from './pages/Profile';
 
 function App() {
-  const {isAuthenticated} = useSelector((state)=>state.auth);
+  const { isAuthenticated, loading } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
 
-  useEffect(()=>{
+  useEffect(() => {
     dispatch(checkAuth());
-  },[dispatch])
+  }, [dispatch])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center">
+        <div className="glass-panel px-6 py-4 rounded-2xl border border-white/10">Checking session...</div>
+      </div>
+    );
+  }
 
   return (
     <div className='app'>
       <Routes>
-        <Route path="/" element={isAuthenticated ? <Homepage /> : <Navigate to="/Signup"/>}/>
-        <Route path="/Login" element={isAuthenticated ? <Navigate to="/"/> : <Loginpage />} />
-        <Route path="/Signup" element={isAuthenticated ? <Navigate to="/"/> : <Signupform />} />
-        <Route path='/ProblemSet'element = {<Problemset/>}></Route>
-        <Route path='/Admin'element = {<Adminpage/>}></Route>
-        <Route path='/Problem/:id'element = {<Problempage/>}></Route>
+        <Route path="/" element={<Homepage />} />
+        <Route path="/login" element={isAuthenticated ? <Navigate to="/problemset" /> : <Loginpage />} />
+        <Route path="/signup" element={isAuthenticated ? <Navigate to="/problemset" /> : <Signupform />} />
+        <Route path="/problemset" element={isAuthenticated ? <Problemset /> : <Navigate to="/login" />} />
+        <Route path="/admin" element={isAuthenticated ? <Adminpage /> : <Navigate to="/login" />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/learning-path" element={isAuthenticated ? <LearningPath /> : <Navigate to="/login" />} />
+        <Route path="/profile" element={isAuthenticated ? <Profile /> : <Navigate to="/login" />} />
+        <Route path="/problem/:id" element={isAuthenticated ? <Problempage /> : <Navigate to="/login" />} />
       </Routes>
     </div>
 

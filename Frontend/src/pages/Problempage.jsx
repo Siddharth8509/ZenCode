@@ -1,115 +1,303 @@
-import { useState,useEffect,useRef } from "react";
+import { useState, useEffect } from "react";
 import axiosClient from "../utils/axiosClient";
-import Editor from '@monaco-editor/react';
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Timer from "../components/Timer";
-import { Panel, Group , Separator } from "react-resizable-panels";
+import { Panel, Group, Separator } from "react-resizable-panels";
 import LeftPanel from "../components/LeftPanel";
-import UpperRightPanle from "../components/UpperRightPanle";
+import UpperRightPanel from "../components/UpperRightPanel";
 import BottomRight from "../components/BottomRight";
+import { runCodeApi, submitCodeApi } from "../api/submission";
 
-export default function Problempage()
-{
-    let {id} = useParams();
-    const [problemData,setProblemData] = useState(null);
-    
-    //for fetching problem data
-    useEffect(()=>{
-    const fetchProblemData = async() =>{
-        try 
-        {
-            const res = await axiosClient.get(`/problem/problemById/${id}`)
-            setProblemData(res.data);
-        } 
-        catch (error) 
-        {
-            console.log("Error occured while fetching the data " + error.message);
+export default function Problempage() {
+    let { id } = useParams();
+    const navigate = useNavigate();
+    const [problemData, setProblemData] = useState(null);
+    const [code, setCode] = useState("// Write your code here");
+    const [language, setLanguage] = useState("cpp");
+    const [output, setOutput] = useState(null);
+    const [isRunning, setIsRunning] = useState(false);
+    const [submissionPopup, setSubmissionPopup] = useState(null);
+
+    useEffect(() => {
+        const fetchProblemData = async () => {
+            try {
+                const res = await axiosClient.get(`/problem/problemById/${id}`)
+                setProblemData(res.data);
+
+                if (res.data?.initialCode) {
+                    const codeObj = res.data.initialCode.find((obj) => obj.language === language);
+                    if (codeObj) setCode(codeObj.code);
+                }
+            }
+            catch (error) {
+                console.error("Error occured while fetching the data " + error.message);
+            }
         }
-    }
-    fetchProblemData();
-    },[id])
-    
+        fetchProblemData();
+    }, [id])
+
+    useEffect(() => {
+        if (problemData?.initialCode) {
+            const codeObj = problemData.initialCode.find((obj) => obj.language === language);
+            if (codeObj) {
+                setCode(codeObj.code);
+            } else {
+                setCode("// Write your code here");
+            }
+        }
+    }, [language, problemData]);
+
+    const getErrorMessage = (error, fallback) => {
+        if (!error) return fallback;
+        if (typeof error === "string") return error;
+        if (typeof error === "object") {
+            return error.message || error.errorMessage || fallback;
+        }
+        return fallback;
+    };
+
+    const handleRun = async () => {
+        setIsRunning(true);
+        setOutput(null);
+        try {
+            const res = await runCodeApi(id, code, language);
+            setOutput({ ...res, type: 'run' });
+        } catch (error) {
+            console.error(error);
+            setOutput({ errorMessage: getErrorMessage(error, "Error running code"), type: 'error' });
+        } finally {
+            setIsRunning(false);
+        }
+    };
+
+    const handleSubmit = async () => {
+        setIsRunning(true);
+        setOutput(null);
+        try {
+            const res = await submitCodeApi(id, code, language);
+            if (res && typeof res === "object") {
+                const payload = { ...res, type: 'submit' };
+                setOutput(payload);
+                setSubmissionPopup({
+                    ...payload,
+                    language,
+                    timestamp: Date.now(),
+                });
+            } else {
+                const payload = { message: res || "Problem submitted successfully", type: 'submit' };
+                setOutput(payload);
+                setSubmissionPopup({
+                    ...payload,
+                    language,
+                    timestamp: Date.now(),
+                });
+            }
+        } catch (error) {
+            console.error(error);
+            const errorMessage = getErrorMessage(error, "Error submitting code");
+            setOutput({ errorMessage, type: 'error' });
+            setSubmissionPopup({
+                errorMessage,
+                type: "error",
+                language,
+                timestamp: Date.now(),
+            });
+        } finally {
+            setIsRunning(false);
+        }
+    };
+
     return (
-    <>
-    <div className="h-screen w-screen">
-        
-        {/*NavBar*/}
-        <div className="flex h-15 bg-amber-600 items-center justify-between px-4">
-            {/* Right */}
-            <div className="flex gap-3">
+        <>
+            <div className="h-screen w-full overflow-hidden">
 
-            <div className="btn btn-neutral w-37 flex justify-between items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3" />
-                </svg>
-                <div >Problem-List</div>
-            </div>
+                {/*IDE Navbar*/}
+                <div className="flex h-16 glass items-center justify-between px-4 border-b border-white/10 relative z-20">
+                    {/* Left: Navigation */}
+                    <div className="flex gap-4 items-center">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl font-bold bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent mr-4">ZenCode</span>
+                        </div>
 
-            <div className="flex gap-0.5">
-                <button className="btn w-10 h-10">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={5} stroke="currentColor" className="size-6 scale-[3]">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-                </svg>
-                </button>
-                <button className="btn w-10 h-10">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={5} stroke="currentColor" className="size-6 scale-[3]">
-                <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-                </svg>
-                </button>
-            </div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => navigate('/problemset')} className="btn btn-sm btn-ghost text-slate-300 hover:text-white flex items-center gap-2 hover:bg-white/5">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3" />
+                                </svg>
+                                Problem List
+                            </button>
 
-            </div>
-            
-            {/*Middle */}
-            <div className="flex gap-3 mr-11">
+                            <div className="join">
+                                <button className="btn btn-sm btn-ghost join-item text-slate-400 hover:bg-white/5">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                                    </svg>
+                                </button>
+                                <button className="btn btn-sm btn-ghost join-item text-slate-400 hover:bg-white/5">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
 
-            <div>
-                <button className="btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 hover:stroke-amber-600">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
-                    </svg>
+                    {/* Middle: Actions */}
+                    <div className="flex gap-3">
+                        <button
+                            className={`btn btn-sm bg-slate-900 hover:bg-slate-800 text-white border-none gap-2 transition-all duration-300 ${isRunning ? "opacity-70 cursor-not-allowed" : "hover:scale-[1.02] active:scale-[0.97]"}`}
+                            onClick={handleRun}
+                            disabled={isRunning}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+                            </svg>
+                            {isRunning ? "Running..." : "Run"}
+                        </button>
 
-                </button>
-            </div>
+                        <button
+                            className={`btn btn-sm bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-none gap-2 px-6 shadow-2xl transition-all duration-300 ${isRunning ? "opacity-70 cursor-not-allowed" : "hover:scale-[1.02] active:scale-[0.97]"}`}
+                            onClick={handleSubmit}
+                            disabled={isRunning}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
+                            </svg>
+                            {isRunning ? "Submitting..." : "Submit"}
+                        </button>
+                    </div>
 
-            <div>
-                <button className="btn">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
-                </svg>
-                Submit
-                </button>
-            </div>
+                    {/* Right: Timer */}
+                    <div className="text-slate-300 font-mono px-3 py-1 rounded">
+                        <Timer></Timer>
+                    </div>
+                </div>
 
-            </div>
 
-            {/*Left */}
-            <div>
-                <Timer></Timer>
-            </div>
-        </div>
+                <div className="bg-slate-950 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black h-[calc(100vh-64px)] w-full overflow-hidden relative">
+                    {/* Ambient Glow */}
+                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+                        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-orange-400/40 rounded-full blur-[100px]"></div>
+                        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-red-400/40 rounded-full blur-[100px]"></div>
+                    </div>
 
-        
-        <div className="bg-blue-950 h-[calc(100vh-60px)]">
-        
-            <Group orientation="horizontal">
+                    <Group orientation="horizontal" className="z-10 relative p-1 h-full w-full min-h-0 min-w-0">
 
-                <Panel><LeftPanel prop={problemData}></LeftPanel></Panel>
-                <Separator className="w-1 cursor-row-resize bg-gray-400" />
-                
-                <Panel>
-                    <Group orientation="vertical">
-                        <Panel className="bg-blue-600 overflow-auto" ><UpperRightPanle prop={problemData}></UpperRightPanle></Panel>
-                        <Separator className="bg-gray-400 h-1 cursor-row-resize"/>
-                        <Panel className="bg-red-400" defaultSize="25%"><BottomRight prop={problemData}></BottomRight></Panel>
+                        <Panel defaultSize="40%" minSize="25%" className="m-1 rounded-xl overflow-hidden border border-white/10 shadow-2xl min-h-0 min-w-0">
+                            <LeftPanel prop={problemData} />
+                        </Panel>
+                        <Separator className="w-1 cursor-col-resize bg-transparent hover:bg-orange-400/60 transition-colors" />
+
+                        <Panel defaultSize="60%" minSize="30%" className="min-h-0 min-w-0">
+                            <Group orientation="vertical" className="h-full min-h-0">
+                                <Panel defaultSize="65%" minSize="20%" className="m-1 rounded-xl border border-white/10 overflow-hidden shadow-2xl min-h-0">
+                                    <UpperRightPanel
+                                        prop={problemData}
+                                        code={code}
+                                        setCode={setCode}
+                                        language={language}
+                                        setLanguage={setLanguage}
+                                    />
+                                </Panel>
+                                <Separator className="bg-transparent h-1 cursor-row-resize hover:bg-orange-400/60 transition-colors" />
+                                <Panel defaultSize="35%" minSize="15%" className="m-1 rounded-xl border border-white/10 shadow-2xl min-h-0">
+                                    <BottomRight prop={problemData} output={output} />
+                                </Panel>
+                            </Group>
+                        </Panel>
+
                     </Group>
-                </Panel>
 
-            </Group>
+                </div>
 
-        </div>
+            </div>
 
-    </div>
-    </>
-  );
+            {submissionPopup && (
+                <div className="fixed left-4 top-20 z-50 w-[min(380px,calc(100vw-2rem))] animate-slide-in-left">
+                    <div className="relative rounded-2xl border border-white/10 bg-slate-900/90 p-5 shadow-2xl">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div
+                                    className={`h-12 w-12 rounded-2xl flex items-center justify-center ${submissionPopup.type === "error"
+                                        ? "bg-rose-500/10 text-rose-400"
+                                        : (submissionPopup.problemStatus || submissionPopup.status) === "accepted"
+                                            ? "bg-emerald-500/10 text-emerald-400"
+                                            : "bg-orange-500/10 text-orange-300"
+                                        }`}
+                                >
+                                    <span className="text-xl font-bold">
+                                        {submissionPopup.type === "error"
+                                            ? "!"
+                                            : (submissionPopup.problemStatus || submissionPopup.status) === "accepted"
+                                                ? "OK"
+                                                : ">"}
+                                    </span>
+                                </div>
+                                <div>
+                                    <div className="text-xs uppercase tracking-[0.25em] text-slate-500">
+                                        Submission Result
+                                    </div>
+                                    <div className="text-xl font-semibold text-white">
+                                        {submissionPopup.type === "error"
+                                            ? "Submission Failed"
+                                            : (submissionPopup.problemStatus || submissionPopup.status)
+                                                ? (submissionPopup.problemStatus || submissionPopup.status).replace("_", " ")
+                                                : "Submitted"}
+                                    </div>
+                                </div>
+                            </div>
+                            <button
+                                className="btn btn-sm btn-ghost text-slate-400"
+                                onClick={() => setSubmissionPopup(null)}
+                            >
+                                Close
+                            </button>
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                            <div className="rounded-xl border border-white/10 bg-slate-900/60 p-3">
+                                <div className="text-xs text-slate-500 uppercase">Language</div>
+                                <div className="font-mono text-white">{submissionPopup.language}</div>
+                            </div>
+                            <div className="rounded-xl border border-white/10 bg-slate-900/60 p-3">
+                                <div className="text-xs text-slate-500 uppercase">Time</div>
+                                <div className="text-white">
+                                    {new Date(submissionPopup.timestamp).toLocaleTimeString()}
+                                </div>
+                            </div>
+                        </div>
+
+                        {submissionPopup.errorMessage && (
+                            <div className="mt-4 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-rose-200 text-sm">
+                                {submissionPopup.errorMessage}
+                            </div>
+                        )}
+
+                        {submissionPopup.message && (
+                            <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-emerald-200 text-sm">
+                                {submissionPopup.message}
+                            </div>
+                        )}
+
+                        {(submissionPopup.runtime || submissionPopup.memory) && (
+                            <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                                <div className="rounded-xl border border-white/10 bg-slate-900/60 p-3">
+                                    <div className="text-xs text-slate-500 uppercase">Runtime</div>
+                                    <div className="text-white">{submissionPopup.runtime} ms</div>
+                                </div>
+                                <div className="rounded-xl border border-white/10 bg-slate-900/60 p-3">
+                                    <div className="text-xs text-slate-500 uppercase">Memory</div>
+                                    <div className="text-white">{submissionPopup.memory} KB</div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="mt-4 text-xs text-slate-500">
+                            Saved to your submissions history.
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    );
 }
