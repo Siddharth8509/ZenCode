@@ -29,7 +29,7 @@ const registerUser = async (req, res) => {
             role: userData.role
         }
 
-        res.cookie("token", token, { maxAge: 60 * 60 * 1000 });
+        res.cookie("token", token, { maxAge: 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
         res.status(201).json({
             user: reply,
             message: "User registered successfully"
@@ -68,7 +68,7 @@ const loginUser = async (req, res) => {
             role: userData.role
         }
 
-        res.cookie("token", token, { maxAge: 60 * 60 * 1000 });
+        res.cookie("token", token, { maxAge: 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
         res.status(202).json({
             user: reply,
             message: "User registered successfully"

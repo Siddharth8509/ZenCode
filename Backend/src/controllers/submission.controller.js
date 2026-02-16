@@ -4,6 +4,21 @@ import problem from "../model/problem.js";
 import user from "../model/user.js";
 import submission from "../model/submission.js"
 
+const mapJudgeStatus = (statusId) => {
+    switch (statusId) {
+        case 3:
+            return "accepted";
+        case 4:
+            return "wrong_answer";
+        case 5:
+            return "time_limit_exceeded";
+        case 6:
+            return "compilation_error";
+        default:
+            return "runtime_error";
+    }
+};
+
 const submitCode = async(req,res) => {
     try
     {
@@ -61,7 +76,7 @@ const submitCode = async(req,res) => {
             else 
             {
                 errorMessage = test.stderr || test.compile_output || "Execution error";
-                problemStatus = test.status_id === 4 ? "wrong_answer" : "runtime_error";
+                problemStatus = mapJudgeStatus(test.status_id);
                 break;
             }
         }
@@ -81,7 +96,15 @@ const submitCode = async(req,res) => {
 
 
         await submitedProblem.save();
-        res.status(201).send("Problem submitted successfully");
+        res.status(201).json({
+            message: "Problem submitted successfully",
+            problemStatus,
+            runtime,
+            memory,
+            errorMessage,
+            testCasesPassed,
+            testCasesTotal: problemData.hiddenTestCase.length,
+        });
     }
     catch(error)
     {
@@ -110,7 +133,7 @@ const runCode = async(req,res) => {
 
         const languageId = getLanguageId(language);
 
-        const judgeSubmissions  = problemData.hiddenTestCase.map(({input,output})=>({
+        const judgeSubmissions  = problemData.visibleTestCase.map(({input,output})=>({
             source_code : code,
             language_id : languageId,
             stdin : input,
@@ -138,12 +161,12 @@ const runCode = async(req,res) => {
             else 
             {
                 errorMessage = test.stderr || test.compile_output || "Execution error";
-                problemStatus = test.status_id === 4 ? "wrong_answer" : "runtime_error";
+                problemStatus = mapJudgeStatus(test.status_id);
                 break;
             }
         }
 
-        res.status(201).json({"errorMessage" : errorMessage , "runtime" : runtime , "problemStatus" : problemStatus , "memory" : memory});
+        res.status(201).json({ "errorMessage": errorMessage, "runtime": runtime, "problemStatus": problemStatus, "memory": memory });
     } 
     catch(error)
     {
@@ -151,4 +174,20 @@ const runCode = async(req,res) => {
     }
 }
 
-export  {submitCode,runCode};
+const getSubmission = async (req, res) => {
+    try {
+        const userId = req.userId;
+        const problemId = req.params.id;
+        if (!mongoose.Types.ObjectId.isValid(problemId)) {
+            return res.status(400).send("Invalid problemId");
+        }
+
+        const submissionsDone = await submission.find({ userId, problemId }).sort({ createdAt: -1 });
+        return res.status(200).json(submissionsDone);
+    }
+    catch (error) {
+        res.status(500).json({ message: "Server error" });
+    }
+}
+
+export  {submitCode,runCode,getSubmission};

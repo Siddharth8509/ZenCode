@@ -1,11 +1,12 @@
 import express from "express";
 import authMiddleware from "../middleware/auth.middleware.js";
-import {submitCode,runCode} from "../controllers/submission.controller.js";
+import { submitCode, runCode, getSubmission } from "../controllers/submission.controller.js";
 
 const submissionRouter = express.Router();
 
 submissionRouter.post("/submit/:id",authMiddleware,submitCode);
 submissionRouter.post("/run/:id",authMiddleware,runCode);
+submissionRouter.get("/getSubmission/:id", authMiddleware, getSubmission);
 
 
 export default submissionRouter;
