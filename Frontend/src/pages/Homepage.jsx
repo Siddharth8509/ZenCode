@@ -52,10 +52,10 @@ export default function Homepage() {
               </p>
               <div className="hero-reveal flex flex-col sm:flex-row gap-4">
                 <Link
-                  to="/learning-path"
+                  to="/problemset"
                   className="px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold text-lg rounded-full hover:from-orange-600 hover:to-red-600 transition-colors shadow-xl shadow-orange-900/20"
                 >
-                  Start Learning Path
+                  Start Solving
                 </Link>
                 <Link
                   to="/problemset"
@@ -147,9 +147,9 @@ export default function Homepage() {
 
         <div className="container mx-auto px-6 mt-28 grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-12 items-center">
           <div className="space-y-6">
-            <h2 className="text-3xl md:text-4xl font-semibold">Structured Learning Path</h2>
+            <h2 className="text-3xl md:text-4xl font-semibold">Structured Problem Practice</h2>
             <p className="text-slate-400 text-lg">
-              Learn the right problems in the right order. Each section comes with milestones, hints, and a progress checklist.
+              Practice problems by topic and difficulty with a clear structure that keeps your preparation consistent.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
@@ -165,10 +165,10 @@ export default function Homepage() {
               ))}
             </div>
             <Link
-              to="/learning-path"
+              to="/problemset"
               className="inline-flex items-center gap-2 text-orange-400 hover:text-orange-300 font-semibold"
             >
-              Go to Learning Path &gt;
+              Go to Problem Set &gt;
             </Link>
           </div>
           <motion.div
@@ -274,7 +274,7 @@ export default function Homepage() {
               <div>
                 <h2 className="text-3xl md:text-4xl font-semibold">Ready to level up?</h2>
                 <p className="text-slate-400 mt-3 max-w-xl">
-                  Build your streak, follow the path, and see your progress climb.
+                  Build your streak with consistent problem-solving and see your progress climb.
                 </p>
               </div>
               <Link

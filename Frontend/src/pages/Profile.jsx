@@ -1,42 +1,219 @@
-import { useMemo } from "react";
-import { useSelector } from "react-redux";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { updateProfile, resetPassword } from "../authSlice";
 import { Link } from "react-router-dom";
+import { gsap } from "gsap";
 import Navbar from "../components/Navbar";
+import axiosClient from "../utils/axiosClient";
 import {
-  TrophyIcon,
   AcademicCapIcon,
   CodeBracketIcon,
   CalendarDaysIcon,
   FireIcon,
-  ChartBarIcon,
+  PencilSquareIcon,
+  KeyIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/solid";
 
-const TOTAL_PATH_QUESTIONS = 18;
+const RING_RADIUS = 74;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 export default function Profile() {
-  const { user } = useSelector((state) => state.auth);
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
 
-  const progress = useMemo(() => {
-    const raw = localStorage.getItem("zencode-learning-progress");
-    let checked = {};
-    if (raw) {
-      try {
-        checked = JSON.parse(raw);
-      } catch {
-        checked = {};
-      }
-    }
-    const count = Object.values(checked).filter(Boolean).length;
-    return { count, percent: Math.round((count / TOTAL_PATH_QUESTIONS) * 100) };
-  }, []);
+  const [solvedCount, setSolvedCount] = useState(0);
+  const [totalProblems, setTotalProblems] = useState(0);
+  const [recentSolved, setRecentSolved] = useState([]);
+  const [solvedLoading, setSolvedLoading] = useState(true);
+  const [solvedError, setSolvedError] = useState(null);
+
+  const [animatedSolvedCount, setAnimatedSolvedCount] = useState(0);
+  const [animatedPercent, setAnimatedPercent] = useState(0);
+
+  const progressCircleRef = useRef(null);
+  const tweenValuesRef = useRef({ solved: 0, percent: 0 });
 
   const initials = `${user?.firstname?.[0] || ""}${user?.lastname?.[0] || ""}`.toUpperCase() || "U";
 
+  // Modals state
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
+
+  // Edit Profile Form state
+  const [editFormData, setEditFormData] = useState({
+    firstname: "",
+    lastname: "",
+  });
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [editSuccess, setEditSuccess] = useState("");
+
+  // Reset Password Form state
+  const [passFormData, setPassFormData] = useState({
+    oldPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passLoading, setPassLoading] = useState(false);
+  const [passError, setPassError] = useState("");
+  const [passSuccess, setPassSuccess] = useState("");
+
+  // Populate edit form when modal opens
+  useEffect(() => {
+    if (isEditProfileOpen && user) {
+      setEditFormData({
+        firstname: user.firstname || "",
+        lastname: user.lastname || "",
+      });
+      setEditError("");
+      setEditSuccess("");
+    }
+  }, [isEditProfileOpen, user]);
+
+  useEffect(() => {
+    if (isResetPasswordOpen) {
+      setPassFormData({ oldPassword: "", newPassword: "", confirmPassword: "" });
+      setPassError("");
+      setPassSuccess("");
+    }
+  }, [isResetPasswordOpen]);
+
+  const handleEditProfile = async (e) => {
+    e.preventDefault();
+    setEditLoading(true);
+    setEditError("");
+    setEditSuccess("");
+
+    try {
+      await dispatch(updateProfile(editFormData)).unwrap();
+      setEditSuccess("Profile updated successfully!");
+      setTimeout(() => setIsEditProfileOpen(false), 2000);
+    } catch (err) {
+      setEditError(err || "Failed to update profile");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setPassLoading(true);
+    setPassError("");
+    setPassSuccess("");
+
+    if (passFormData.newPassword !== passFormData.confirmPassword) {
+      setPassError("New passwords do not match");
+      setPassLoading(false);
+      return;
+    }
+
+    try {
+      await dispatch(resetPassword({
+        oldPassword: passFormData.oldPassword,
+        newPassword: passFormData.newPassword
+      })).unwrap();
+      setPassSuccess("Password reset successfully!");
+      setTimeout(() => setIsResetPasswordOpen(false), 2000);
+    } catch (err) {
+      setPassError(err || "Failed to reset password");
+    } finally {
+      setPassLoading(false);
+    }
+  };
+
+  const progressPercent = useMemo(() => {
+    if (!totalProblems) return 0;
+    return Math.round((solvedCount / totalProblems) * 100);
+  }, [solvedCount, totalProblems]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let isCancelled = false;
+
+    const fetchSolvedStats = async () => {
+      try {
+        const res = await axiosClient.get("/problem/user");
+        if (isCancelled) return;
+
+        setSolvedCount(Number(res.data?.solvedCount) || 0);
+        setTotalProblems(Number(res.data?.totalProblems) || 0);
+        setRecentSolved(Array.isArray(res.data?.recentSolved) ? res.data.recentSolved : []);
+        setSolvedError(null);
+      } catch (error) {
+        if (isCancelled) return;
+        const data = error?.response?.data;
+        const message =
+          (typeof data === "string" && data) ||
+          data?.message ||
+          "Unable to load solved stats.";
+        setSolvedError(message);
+      } finally {
+        if (!isCancelled) {
+          setSolvedLoading(false);
+        }
+      }
+    };
+
+    fetchSolvedStats();
+
+    const intervalId = setInterval(fetchSolvedStats, 15000);
+
+    const handleFocus = () => {
+      fetchSolvedStats();
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchSolvedStats();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      isCancelled = true;
+      clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    const targetPercent = Math.max(0, Math.min(100, progressPercent));
+    const targetSolved = Math.max(0, solvedCount);
+    const values = tweenValuesRef.current;
+
+    const tween = gsap.to(values, {
+      solved: targetSolved,
+      percent: targetPercent,
+      duration: 0.9,
+      ease: "power2.out",
+      onUpdate: () => {
+        const currentSolved = Math.round(values.solved);
+        const currentPercent = Math.round(values.percent);
+        setAnimatedSolvedCount(currentSolved);
+        setAnimatedPercent(currentPercent);
+
+        if (progressCircleRef.current) {
+          const dashOffset = RING_CIRCUMFERENCE * (1 - values.percent / 100);
+          progressCircleRef.current.style.strokeDashoffset = `${dashOffset}`;
+        }
+      },
+    });
+
+    return () => {
+      tween.kill();
+    };
+  }, [solvedCount, progressPercent]);
+
   const stats = [
-    { label: "Problems Solved", value: "—", icon: CodeBracketIcon, color: "text-emerald-400" },
-    { label: "Current Streak", value: "—", icon: FireIcon, color: "text-orange-400" },
-    { label: "Days Active", value: "—", icon: CalendarDaysIcon, color: "text-blue-400" },
-    { label: "Rank", value: "—", icon: ChartBarIcon, color: "text-amber-400" },
+    { label: "Problems Solved", value: animatedSolvedCount, icon: CodeBracketIcon, color: "text-emerald-400" },
+    { label: "Total Problems", value: totalProblems, icon: AcademicCapIcon, color: "text-cyan-300" },
+    { label: "Current Streak", value: "--", icon: FireIcon, color: "text-orange-400" },
+    { label: "Days Active", value: "--", icon: CalendarDaysIcon, color: "text-blue-400" },
   ];
 
   return (
@@ -44,27 +221,23 @@ export default function Profile() {
       <Navbar />
 
       <div className="relative pt-28 pb-20 overflow-hidden">
-        {/* Ambient glow */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-24 left-[-10%] w-[50%] h-[50%] bg-orange-400/30 blur-[140px] rounded-full" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-rose-400/30 blur-[140px] rounded-full" />
         </div>
 
         <div className="relative z-10 container mx-auto px-6">
-          {/* Profile Header Card */}
           <div className="glass-panel rounded-3xl border border-white/10 p-8 md:p-10 mb-8">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
-              {/* Avatar */}
               <div className="relative">
                 <div className="h-28 w-28 rounded-2xl bg-gradient-to-br from-orange-500/40 to-red-500/30 flex items-center justify-center text-5xl font-bold text-white shadow-2xl border border-white/10">
                   {initials}
                 </div>
                 <div className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-emerald-500 border-4 border-slate-950 flex items-center justify-center">
-                  <span className="text-[10px] font-bold">✓</span>
+                  <span className="text-[10px] font-bold">OK</span>
                 </div>
               </div>
 
-              {/* Info */}
               <div className="flex-1 text-center md:text-left">
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
                   {user?.firstname} {user?.lastname}
@@ -83,7 +256,6 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Stats Row */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {stats.map((stat) => (
               <div key={stat.label} className="glass-panel rounded-2xl border border-white/10 p-5">
@@ -98,72 +270,319 @@ export default function Profile() {
             ))}
           </div>
 
-          {/* Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Learning Path Progress */}
             <div className="glass-panel p-6 rounded-2xl border border-white/10">
               <div className="flex items-center gap-2 mb-5">
                 <AcademicCapIcon className="h-5 w-5 text-orange-400" />
-                <span className="text-sm font-semibold uppercase tracking-[0.15em] text-slate-400">Learning Path</span>
+                <span className="text-sm font-semibold uppercase tracking-[0.15em] text-slate-400">Solved Progress</span>
               </div>
-              <div className="text-4xl font-bold mb-1">{progress.percent}%</div>
-              <div className="text-sm text-slate-500 mb-4">{progress.count} of {TOTAL_PATH_QUESTIONS} questions completed</div>
-              <div className="h-3 w-full rounded-full bg-white/10 border border-white/10 overflow-hidden mb-5">
-                <div
-                  className="h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-500 rounded-full"
-                  style={{ width: `${progress.percent}%` }}
-                />
-              </div>
-              <Link
-                to="/learning-path"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold text-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
-              >
-                Continue Learning →
-              </Link>
-            </div>
 
-            {/* Compete Card */}
-            <div className="glass-panel p-6 rounded-2xl border border-white/10 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-5">
-                  <TrophyIcon className="h-5 w-5 text-amber-400" />
-                  <span className="text-sm font-semibold uppercase tracking-[0.15em] text-slate-400">Compete</span>
+              <div className="flex flex-col sm:flex-row items-center gap-6">
+                <div className="relative h-44 w-44 shrink-0">
+                  <svg className="h-44 w-44 -rotate-90" viewBox="0 0 180 180" role="img" aria-label="Solved progress">
+                    <circle
+                      cx="90"
+                      cy="90"
+                      r={RING_RADIUS}
+                      fill="none"
+                      stroke="rgba(148, 163, 184, 0.2)"
+                      strokeWidth="12"
+                    />
+                    <circle
+                      ref={progressCircleRef}
+                      cx="90"
+                      cy="90"
+                      r={RING_RADIUS}
+                      fill="none"
+                      stroke="url(#solvedProgressGradient)"
+                      strokeWidth="12"
+                      strokeLinecap="round"
+                      strokeDasharray={RING_CIRCUMFERENCE}
+                      strokeDashoffset={RING_CIRCUMFERENCE}
+                    />
+                    <defs>
+                      <linearGradient id="solvedProgressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#22c55e" />
+                        <stop offset="50%" stopColor="#f59e0b" />
+                        <stop offset="100%" stopColor="#ef4444" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <div className="text-4xl font-bold">{animatedPercent}%</div>
+                    <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Complete</div>
+                  </div>
                 </div>
-                <h3 className="text-2xl font-bold mb-2">See where you rank</h3>
-                <p className="text-slate-400 text-sm mb-6">
-                  Compare your progress against other developers and climb the global leaderboard.
-                </p>
+
+                <div className="w-full">
+                  <div className="text-4xl font-bold mb-1">{animatedSolvedCount}</div>
+                  <div className="text-sm text-slate-500 mb-5">
+                    {totalProblems ? `${animatedSolvedCount} of ${totalProblems} questions solved` : "No problems created yet"}
+                  </div>
+
+                  <Link
+                    to="/problemset"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold text-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    Continue Practice
+                  </Link>
+                </div>
               </div>
-              <Link
-                to="/leaderboard"
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 font-semibold text-sm transition-all w-full"
-              >
-                <TrophyIcon className="h-4 w-4" />
-                View Leaderboard
-              </Link>
+
+              {solvedLoading && (
+                <p className="text-xs text-slate-500 mt-4">Refreshing solved stats...</p>
+              )}
+              {solvedError && (
+                <p className="text-xs text-rose-300 mt-4">{solvedError}</p>
+              )}
             </div>
 
-            {/* Account Details — full width */}
-            <div className="glass-panel p-6 rounded-2xl border border-white/10 lg:col-span-2">
-              <div className="text-sm font-semibold uppercase tracking-[0.15em] text-slate-400 mb-5">Account Details</div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="glass-panel p-6 rounded-2xl border border-white/10 relative">
+              <div className="flex items-center justify-between mb-5">
+                <div className="text-sm font-semibold uppercase tracking-[0.15em] text-slate-400">Account Details</div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setIsEditProfileOpen(true)}
+                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 transition-colors"
+                    title="Edit Profile"
+                  >
+                    <PencilSquareIcon className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setIsResetPasswordOpen(true)}
+                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 transition-colors"
+                    title="Reset Password"
+                  >
+                    <KeyIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-4">
                 <div className="rounded-xl bg-slate-950/60 border border-white/5 p-4">
                   <div className="text-xs text-slate-500 mb-1">First Name</div>
-                  <div className="text-lg font-semibold">{user?.firstname || "—"}</div>
+                  <div className="text-lg font-semibold">{user?.firstname || "--"}</div>
                 </div>
                 <div className="rounded-xl bg-slate-950/60 border border-white/5 p-4">
                   <div className="text-xs text-slate-500 mb-1">Last Name</div>
-                  <div className="text-lg font-semibold">{user?.lastname || "—"}</div>
+                  <div className="text-lg font-semibold">{user?.lastname || "--"}</div>
                 </div>
                 <div className="rounded-xl bg-slate-950/60 border border-white/5 p-4">
                   <div className="text-xs text-slate-500 mb-1">Email</div>
-                  <div className="text-lg font-semibold break-all">{user?.emailId || "—"}</div>
+                  <div className="text-lg font-semibold break-all">{user?.emailId || "--"}</div>
                 </div>
               </div>
             </div>
           </div>
+
+          <div className="glass-panel p-6 rounded-2xl border border-white/10 mt-6">
+            <div className="flex items-center justify-between gap-3 mb-5">
+              <div className="text-sm font-semibold uppercase tracking-[0.15em] text-slate-400">
+                Last 5 Solved Questions
+              </div>
+              <span className="text-xs text-slate-500">Updates every 15s</span>
+            </div>
+
+            {recentSolved.length > 0 ? (
+              <div className="space-y-3">
+                {recentSolved.map((item, index) => (
+                  <div
+                    key={`${item.problemId}-${item.solvedAt}-${index}`}
+                    className="rounded-xl bg-slate-950/60 border border-white/5 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="h-7 w-7 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-semibold flex items-center justify-center shrink-0">
+                        {index + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="font-medium text-white truncate">{item.title}</div>
+                        <div className="text-xs text-slate-500">Solved</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="text-xs sm:text-sm text-slate-400">
+                        {item.solvedAt
+                          ? new Date(item.solvedAt).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })
+                          : "--"}
+                      </div>
+                      {item.problemId && (
+                        <Link
+                          to={`/problem/${item.problemId}`}
+                          className="btn btn-xs bg-white/5 border-white/15 text-slate-300 hover:bg-white/10"
+                        >
+                          Open
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-xl bg-slate-950/60 border border-white/5 p-4 text-slate-400 text-sm">
+                No solved questions yet.
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      {isEditProfileOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="glass-panel w-full max-w-md rounded-2xl border border-white/10 p-6 relative">
+            <button
+              onClick={() => setIsEditProfileOpen(false)}
+              className="absolute top-4 right-4 p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <XMarkIcon className="h-5 w-5" />
+            </button>
+            <h2 className="text-xl font-bold mb-6">Edit Identity</h2>
+
+            {editSuccess && (
+              <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
+                {editSuccess}
+              </div>
+            )}
+            {editError && (
+              <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm">
+                {editError}
+              </div>
+            )}
+
+            <form onSubmit={handleEditProfile} className="space-y-4">
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">First Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editFormData.firstname}
+                  onChange={(e) => setEditFormData({ ...editFormData, firstname: e.target.value })}
+                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-orange-500/50"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Last Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editFormData.lastname}
+                  onChange={(e) => setEditFormData({ ...editFormData, lastname: e.target.value })}
+                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-orange-500/50"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Email <span className="text-slate-500">(Cannot be changed)</span></label>
+                <input
+                  type="email"
+                  disabled
+                  value={user?.emailId || ""}
+                  className="w-full bg-slate-950/50 border border-white/5 rounded-xl px-4 py-2 text-sm text-slate-500 cursor-not-allowed"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsEditProfileOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-sm font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editLoading}
+                  className="px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
+                >
+                  {editLoading ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {isResetPasswordOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="glass-panel w-full max-w-md rounded-2xl border border-white/10 p-6 relative">
+            <button
+              onClick={() => setIsResetPasswordOpen(false)}
+              className="absolute top-4 right-4 p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <XMarkIcon className="h-5 w-5" />
+            </button>
+            <h2 className="text-xl font-bold mb-6">Reset Password</h2>
+
+            {passSuccess && (
+              <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
+                {passSuccess}
+              </div>
+            )}
+            {passError && (
+              <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm">
+                {passError}
+              </div>
+            )}
+
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Current Password</label>
+                <input
+                  type="password"
+                  required
+                  value={passFormData.oldPassword}
+                  onChange={(e) => setPassFormData({ ...passFormData, oldPassword: e.target.value })}
+                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-orange-500/50"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">New Password</label>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  value={passFormData.newPassword}
+                  onChange={(e) => setPassFormData({ ...passFormData, newPassword: e.target.value })}
+                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-orange-500/50"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Confirm New Password</label>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  value={passFormData.confirmPassword}
+                  onChange={(e) => setPassFormData({ ...passFormData, confirmPassword: e.target.value })}
+                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-orange-500/50"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsResetPasswordOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-sm font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={passLoading}
+                  className="px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
+                >
+                  {passLoading ? "Resetting..." : "Reset Password"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

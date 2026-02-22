@@ -3,15 +3,63 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosClient from "../utils/axiosClient";
 import Navbar from "../components/Navbar";
+import Loader from "../components/Loader";
+
+const DIFFICULTY_ORDER = ["easy", "medium", "hard"];
+
+const DIFFICULTY_STYLES = {
+  easy: "bg-green-500/10 text-green-400 border-green-500/20",
+  medium: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+  hard: "bg-red-500/10 text-red-400 border-red-500/20",
+};
+
+const getErrorMessage = (error, fallback) => {
+  const data = error?.response?.data;
+  if (typeof data === "string" && data.trim()) return data;
+  if (data?.message) return data.message;
+  return fallback;
+};
+
+const toTopicArray = (tags) => {
+  const values = Array.isArray(tags) ? tags : [tags];
+  const cleaned = values
+    .filter((tag) => typeof tag === "string" && tag.trim())
+    .map((tag) => tag.trim());
+  if (!cleaned.length) return ["Uncategorized"];
+  return Array.from(new Set(cleaned));
+};
+
+function AccordionChevron({ open }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      className={`h-4 w-4 text-slate-400 transition-transform duration-300 ${open ? "rotate-90" : ""}`}
+    >
+      <path
+        fillRule="evenodd"
+        d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 1 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
 
 export default function Problemset() {
   const navigate = useNavigate();
-
   const { isAuthenticated, loading, user } = useSelector((state) => state.auth);
 
-  const handleAdmin = () => {
-    navigate("/admin");
-  };
+  const [problems, setProblems] = useState([]);
+  const [favorites, setFavorites] = useState({});
+  const [isFetching, setIsFetching] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
+  const [solvedProblemMap, setSolvedProblemMap] = useState({});
+  const [solvedFetchError, setSolvedFetchError] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
+  const [deletingProblemId, setDeletingProblemId] = useState(null);
+  const [openTopics, setOpenTopics] = useState({});
+  const [openDifficultyGroups, setOpenDifficultyGroups] = useState({});
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -19,66 +67,128 @@ export default function Problemset() {
     }
   }, [loading, isAuthenticated, navigate]);
 
-  const [problems, setProblems] = useState([]);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [query, setQuery] = useState("");
-  const [difficulty, setDifficulty] = useState("all");
-  const [tag, setTag] = useState("all");
-  const [sortBy, setSortBy] = useState("relevance");
-  const [favorites, setFavorites] = useState({});
-  const [isFetching, setIsFetching] = useState(false);
-  const [fetchError, setFetchError] = useState(null);
-
-
   useEffect(() => {
-    const fetchProblems = async () => {
+    let isCancelled = false;
+
+    const fetchAllProblems = async () => {
       setIsFetching(true);
       setFetchError(null);
+
       try {
-        const res = await axiosClient.get(`/problem/getAllProblems?page=1`);
-        setProblems(res.data.problems);
-        setHasMore(res.data.hasMore);
+        const allProblems = [];
+        let nextPage = 1;
+        let shouldFetchMore = true;
+
+        while (shouldFetchMore) {
+          const res = await axiosClient.get(`/problem/getAllProblems?page=${nextPage}`);
+          const fetchedProblems = Array.isArray(res.data?.problems) ? res.data.problems : [];
+          allProblems.push(...fetchedProblems);
+
+          shouldFetchMore = Boolean(res.data?.hasMore);
+          nextPage += 1;
+        }
+
+        if (!isCancelled) {
+          setProblems(allProblems);
+        }
       } catch (error) {
-        setFetchError(error.response?.data?.message || "Unable to load problems.");
+        if (!isCancelled) {
+          setFetchError(getErrorMessage(error, "Unable to load problems."));
+        }
       } finally {
-        setIsFetching(false);
+        if (!isCancelled) {
+          setIsFetching(false);
+        }
       }
     };
 
-    fetchProblems();
+    fetchAllProblems();
+
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
-  const loadMore = async () => {
-    if (!hasMore) return;
+  useEffect(() => {
+    let isCancelled = false;
 
-    const nextPage = page + 1;
-    setIsFetching(true);
-    setFetchError(null);
-    try {
-      const res = await axiosClient.get(
-        `/problem/getAllProblems?page=${nextPage}`
-      );
-      setProblems(prev => [...prev, ...res.data.problems]);
-      setPage(nextPage);
-      setHasMore(res.data.hasMore);
-    } catch (error) {
-      setFetchError(error.response?.data?.message || "Unable to load more problems.");
-    } finally {
-      setIsFetching(false);
-    }
-  };
+    const fetchSolvedProblems = async () => {
+      if (!isAuthenticated) return;
+      setSolvedFetchError(null);
 
-  const tagOptions = useMemo(() => {
-    const set = new Set();
+      try {
+        const res = await axiosClient.get("/problem/user");
+        const solvedProblems = Array.isArray(res.data?.problems) ? res.data.problems : [];
+        const nextSolvedMap = {};
+
+        solvedProblems.forEach((problemDoc) => {
+          if (problemDoc?._id) {
+            nextSolvedMap[problemDoc._id] = true;
+          }
+        });
+
+        if (!isCancelled) {
+          setSolvedProblemMap(nextSolvedMap);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          setSolvedFetchError(getErrorMessage(error, "Unable to load solved progress."));
+        }
+      }
+    };
+
+    fetchSolvedProblems();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isAuthenticated]);
+
+  const groupedProblems = useMemo(() => {
+    const groupedByTopic = new Map();
+
     problems.forEach((prob) => {
-      const tags = Array.isArray(prob.tags) ? prob.tags : [prob.tags];
-      tags.forEach((t) => {
-        if (t && typeof t === "string") set.add(t);
+      const topics = toTopicArray(prob.tags);
+
+      topics.forEach((topic) => {
+        const topicKey = topic.toLowerCase();
+        if (!groupedByTopic.has(topicKey)) {
+          groupedByTopic.set(topicKey, {
+            topic,
+            total: 0,
+            byDifficulty: { easy: [], medium: [], hard: [], other: [] },
+          });
+        }
+
+        const topicGroup = groupedByTopic.get(topicKey);
+        const difficultyKey = prob.difficulty?.toLowerCase();
+        if (DIFFICULTY_ORDER.includes(difficultyKey)) {
+          topicGroup.byDifficulty[difficultyKey].push(prob);
+        } else {
+          topicGroup.byDifficulty.other.push(prob);
+        }
+        topicGroup.total += 1;
       });
     });
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
+
+    return Array.from(groupedByTopic.values()).sort((a, b) => a.topic.localeCompare(b.topic));
   }, [problems]);
+
+  useEffect(() => {
+    if (!groupedProblems.length) return;
+
+    const firstTopicKey = groupedProblems[0].topic.toLowerCase();
+
+    setOpenTopics((prev) => {
+      if (Object.keys(prev).length) return prev;
+      return { [firstTopicKey]: true };
+    });
+
+    setOpenDifficultyGroups((prev) => {
+      if (Object.keys(prev).length) return prev;
+      return { [`${firstTopicKey}-easy`]: true };
+    });
+  }, [groupedProblems]);
 
   const stats = useMemo(() => {
     const counts = { total: problems.length, easy: 0, medium: 0, hard: 0 };
@@ -91,248 +201,342 @@ export default function Problemset() {
     return counts;
   }, [problems]);
 
-  const filteredProblems = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    let result = problems.filter((prob) => {
-      const matchesQuery = !normalizedQuery || prob.title?.toLowerCase().includes(normalizedQuery);
-      const matchesDifficulty = difficulty === "all" || prob.difficulty?.toLowerCase() === difficulty;
-      const tags = Array.isArray(prob.tags) ? prob.tags : [prob.tags];
-      const matchesTag = tag === "all" || tags.some((t) => t?.toLowerCase() === tag);
-      return matchesQuery && matchesDifficulty && matchesTag;
-    });
+  const solvedCount = useMemo(() => {
+    return problems.reduce((count, prob) => (solvedProblemMap[prob._id] ? count + 1 : count), 0);
+  }, [problems, solvedProblemMap]);
 
-    if (sortBy === "title") {
-      result = [...result].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
-    } else if (sortBy === "difficulty") {
-      const order = { easy: 1, medium: 2, hard: 3 };
-      result = [...result].sort(
-        (a, b) => (order[a.difficulty?.toLowerCase()] || 4) - (order[b.difficulty?.toLowerCase()] || 4)
-      );
-    } else if (sortBy === "favorites") {
-      result = [...result].sort((a, b) => (favorites[b._id] ? 1 : 0) - (favorites[a._id] ? 1 : 0));
+  const solvedProgress = useMemo(() => {
+    if (!stats.total) return 0;
+    return Math.round((solvedCount / stats.total) * 100);
+  }, [solvedCount, stats.total]);
+
+  const handleAdmin = () => {
+    navigate("/admin");
+  };
+
+  const handleOpenRandomQuestion = () => {
+    if (!problems.length) return;
+    const randomIndex = Math.floor(Math.random() * problems.length);
+    const randomProblem = problems[randomIndex];
+
+    if (randomProblem?._id) {
+      navigate(`/problem/${randomProblem._id}`);
     }
-
-    return result;
-  }, [problems, query, difficulty, tag, sortBy, favorites]);
+  };
 
   const toggleFavorite = (id) => {
     setFavorites((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const clearFilters = () => {
-    setQuery("");
-    setDifficulty("all");
-    setTag("all");
-    setSortBy("relevance");
+  const toggleTopic = (topicKey) => {
+    setOpenTopics((prev) => ({ ...prev, [topicKey]: !prev[topicKey] }));
   };
+
+  const toggleDifficultyGroup = (topicKey, level) => {
+    const key = `${topicKey}-${level}`;
+    setOpenDifficultyGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleDeleteProblem = async (problemId, title) => {
+    if (user?.role !== "admin") return;
+
+    const shouldDelete = window.confirm(`Delete "${title}" permanently? This action cannot be undone.`);
+    if (!shouldDelete) return;
+
+    setDeletingProblemId(problemId);
+    setDeleteError(null);
+
+    try {
+      await axiosClient.delete(`/problem/delete/${problemId}`);
+      setProblems((prev) => prev.filter((prob) => prob._id !== problemId));
+      setFavorites((prev) => {
+        const next = { ...prev };
+        delete next[problemId];
+        return next;
+      });
+      setSolvedProblemMap((prev) => {
+        if (!prev[problemId]) return prev;
+        const next = { ...prev };
+        delete next[problemId];
+        return next;
+      });
+    } catch (error) {
+      setDeleteError(getErrorMessage(error, "Unable to delete the problem."));
+    } finally {
+      setDeletingProblemId(null);
+    }
+  };
+
   return (
-    <>
-      <div className="min-h-screen bg-slate-950 text-white">
-        <Navbar />
+    <div className="min-h-screen bg-slate-950 text-white">
+      <Navbar />
 
-        <div className="container mx-auto px-5 pt-24 pb-10">
-          <div className="flex flex-col gap-6 mb-8">
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-              <div>
-                <h2 className="text-3xl font-bold text-white mb-2">Problems</h2>
-                <p className="text-slate-400">Curated list of challenges to sharpen your DSA skills.</p>
-              </div>
-              <div className="flex items-center gap-3">
-                {user?.role === "admin" && (
-                  <button
-                    className="btn btn-sm bg-gradient-to-r from-orange-500 to-red-500 text-white border-none hover:from-orange-600 hover:to-red-600"
-                    onClick={handleAdmin}
-                  >
-                    Admin Panel
-                  </button>
-                )}
+      <div className="container mx-auto px-5 pt-24 pb-10">
+        <div className="flex flex-col gap-6 mb-8">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+            <div>
+              <h2 className="text-3xl font-bold text-white mb-2">Problems</h2>
+              <p className="text-slate-400">Curated list of challenges to sharpen your DSA skills.</p>
+            </div>
+            <div className="flex items-center gap-3">
+              {user?.role === "admin" && (
                 <button
-                  className="btn btn-sm bg-slate-900/70 text-slate-300 border-white/10 hover:bg-slate-900/80"
-                  onClick={clearFilters}
+                  className="btn btn-sm bg-gradient-to-r from-orange-500 to-red-500 text-white border-none hover:from-orange-600 hover:to-red-600"
+                  onClick={handleAdmin}
                 >
-                  Reset Filters
+                  Admin Panel
                 </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="glass-panel p-4 rounded-2xl border border-white/10">
-                <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Total</div>
-                <div className="text-2xl font-semibold">{stats.total}</div>
-              </div>
-              <div className="glass-panel p-4 rounded-2xl border border-white/10">
-                <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Easy</div>
-                <div className="text-2xl font-semibold text-emerald-400">{stats.easy}</div>
-              </div>
-              <div className="glass-panel p-4 rounded-2xl border border-white/10">
-                <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Medium</div>
-                <div className="text-2xl font-semibold text-amber-400">{stats.medium}</div>
-              </div>
-              <div className="glass-panel p-4 rounded-2xl border border-white/10">
-                <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Hard</div>
-                <div className="text-2xl font-semibold text-rose-400">{stats.hard}</div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr_1fr_1fr] gap-4">
-              <div className="glass-panel p-4 rounded-2xl border border-white/10">
-                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Search</label>
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search problems..."
-                  className="mt-2 w-full bg-slate-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all placeholder:text-slate-400"
-                />
-              </div>
-              <div className="glass-panel p-4 rounded-2xl border border-white/10">
-                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Difficulty</label>
-                <select
-                  value={difficulty}
-                  onChange={(e) => setDifficulty(e.target.value)}
-                  className="mt-2 w-full bg-slate-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
-                >
-                  <option value="all">All</option>
-                  <option value="easy">Easy</option>
-                  <option value="medium">Medium</option>
-                  <option value="hard">Hard</option>
-                </select>
-              </div>
-              <div className="glass-panel p-4 rounded-2xl border border-white/10">
-                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Tag</label>
-                <select
-                  value={tag}
-                  onChange={(e) => setTag(e.target.value)}
-                  className="mt-2 w-full bg-slate-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
-                >
-                  <option value="all">All</option>
-                  {tagOptions.map((opt) => (
-                    <option key={opt} value={opt.toLowerCase()}>
-                      {opt}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="glass-panel p-4 rounded-2xl border border-white/10">
-                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Sort By</label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="mt-2 w-full bg-slate-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
-                >
-                  <option value="relevance">Recommended</option>
-                  <option value="title">Title</option>
-                  <option value="difficulty">Difficulty</option>
-                  <option value="favorites">Bookmarks</option>
-                </select>
-              </div>
-            </div>
-            <div className="text-sm text-slate-400">
-              Showing {filteredProblems.length} of {stats.total} problems
-            </div>
-            {fetchError && (
-              <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-                {fetchError}
-              </div>
-            )}
-          </div>
-
-          <div className="overflow-hidden bg-slate-900/70 border border-white/10 rounded-xl shadow-sm">
-            <table className="table w-full text-left">
-              <thead>
-                <tr className="bg-slate-900/80 text-slate-500 border-b border-white/10 text-sm uppercase tracking-wider">
-                  <th className="py-4 pl-6">Title</th>
-                  <th className="py-4">Difficulty</th>
-                  <th className="py-4">Tags</th>
-                  <th className="py-4">Save</th>
-                  <th className="py-4 pr-6 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredProblems.length > 0 ? (
-                  filteredProblems.map((prob) => (
-                    <tr
-                      key={prob._id}
-                      className="border-b border-white/10 hover:bg-slate-950 transition-colors group"
-                    >
-                      <td className="py-4 pl-6 font-medium text-lg text-white group-hover:text-orange-400 transition-colors">
-                        {prob.title}
-                      </td>
-                      <td className="py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${prob.difficulty?.toLowerCase() === 'easy'
-                          ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                          : prob.difficulty?.toLowerCase() === 'medium'
-                            ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
-                            : 'bg-red-500/10 text-red-400 border-red-500/20'
-                          }`}>
-                          {prob.difficulty}
-                        </span>
-                      </td>
-                      <td className="py-4">
-                        <div className="flex flex-wrap gap-2">
-                          {(Array.isArray(prob.tags) ? prob.tags : [prob.tags]).map((tag, idx) => (
-                            <span key={idx} className="px-2 py-0.5 rounded text-xs bg-slate-900/80 text-slate-400 border border-white/10">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="py-4">
-                        <button
-                          onClick={() => toggleFavorite(prob._id)}
-                          className={`h-9 w-9 rounded-full border flex items-center justify-center transition-colors ${favorites[prob._id]
-                              ? "border-orange-500/30 bg-orange-500/10 text-orange-300"
-                              : "border-white/10 text-slate-500 hover:text-orange-300 hover:border-orange-500/40"
-                            }`}
-                          title="Bookmark"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill={favorites[prob._id] ? "currentColor" : "none"}
-                            viewBox="0 0 24 24"
-                            strokeWidth={1.5}
-                            stroke="currentColor"
-                            className="w-5 h-5"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.18v15.183a.75.75 0 0 1-1.241.572L12 17.25l-6.259 4.007a.75.75 0 0 1-1.241-.572V5.502c0-1.103.806-2.052 1.907-2.18a48.507 48.507 0 0 1 11.186 0Z" />
-                          </svg>
-                        </button>
-                      </td>
-                      <td className="py-4 pr-6 text-right">
-                        <button
-                          className="btn btn-sm bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-none shadow-sm transition-all font-medium"
-                          onClick={() => navigate(`/problem/${prob._id}`)}
-                        >
-                          Solve Challenge
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="text-center text-slate-500 py-10 text-lg">
-                      {isFetching ? "Loading problems..." : "No problems found"}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex justify-center mt-8">
-            {hasMore ? (
+              )}
               <button
-                className="btn btn-outline text-slate-300 hover:bg-slate-900/80 hover:text-white border-slate-700 bg-slate-900/70"
-                onClick={loadMore}
-                disabled={isFetching}
+                className="btn btn-sm bg-emerald-500/20 text-emerald-200 border-emerald-400/30 hover:bg-emerald-500/30"
+                onClick={handleOpenRandomQuestion}
+                disabled={!problems.length || isFetching}
               >
-                {isFetching ? "Loading..." : "Load More Problems"}
+                Open Random Question
               </button>
-            ) : (
-              <p className="text-slate-500 text-sm">You have reached the end of the list.</p>
-            )}
+            </div>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="glass-panel p-4 rounded-2xl border border-white/10">
+              <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Total</div>
+              <div className="text-2xl font-semibold">{stats.total}</div>
+            </div>
+            <div className="glass-panel p-4 rounded-2xl border border-white/10">
+              <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Easy</div>
+              <div className="text-2xl font-semibold text-emerald-400">{stats.easy}</div>
+            </div>
+            <div className="glass-panel p-4 rounded-2xl border border-white/10">
+              <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Medium</div>
+              <div className="text-2xl font-semibold text-amber-400">{stats.medium}</div>
+            </div>
+            <div className="glass-panel p-4 rounded-2xl border border-white/10">
+              <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Hard</div>
+              <div className="text-2xl font-semibold text-rose-400">{stats.hard}</div>
+            </div>
+          </div>
+
+          <div className="glass-panel p-4 rounded-2xl border border-white/10">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Progress</div>
+                <div className="text-sm text-slate-400 mt-1">
+                  {solvedCount} solved out of {stats.total}
+                </div>
+              </div>
+              <div className="text-2xl font-semibold text-emerald-300">{solvedProgress}%</div>
+            </div>
+            <div className="mt-3 h-3 w-full rounded-full bg-slate-900/70 border border-white/10 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-emerald-500 via-green-400 to-teal-400 transition-all duration-500"
+                style={{ width: `${solvedProgress}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="text-sm text-slate-400">Showing {stats.total} problems</div>
+
+          {fetchError && (
+            <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+              {fetchError}
+            </div>
+          )}
+          {deleteError && (
+            <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+              {deleteError}
+            </div>
+          )}
+          {solvedFetchError && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+              {solvedFetchError}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          {isFetching && !problems.length ? (
+            <Loader message="Loading problems..." />
+          ) : groupedProblems.length > 0 ? (
+            groupedProblems.map((topicGroup) => {
+              const topicKey = topicGroup.topic.toLowerCase();
+              const isTopicOpen = Boolean(openTopics[topicKey]);
+
+              return (
+                <div key={topicKey} className="rounded-2xl border border-white/10 bg-slate-900/70 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => toggleTopic(topicKey)}
+                    className="w-full px-5 py-4 hover:bg-slate-900/80 transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="text-left">
+                        <h3 className="text-lg font-semibold text-white">{topicGroup.topic}</h3>
+                        <p className="text-xs text-slate-500 uppercase tracking-[0.2em] mt-1">
+                          {topicGroup.total} {topicGroup.total === 1 ? "Problem" : "Problems"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs uppercase tracking-[0.2em] text-slate-500">Topic</span>
+                        <AccordionChevron open={isTopicOpen} />
+                      </div>
+                    </div>
+                  </button>
+
+                  <div
+                    className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${isTopicOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="px-5 pb-5 pt-1 space-y-3">
+                        {DIFFICULTY_ORDER.map((level) => {
+                          const difficultyProblems = topicGroup.byDifficulty[level];
+                          const difficultyKey = `${topicKey}-${level}`;
+                          const isDifficultyOpen = Boolean(openDifficultyGroups[difficultyKey]);
+
+                          return (
+                            <div key={difficultyKey} className="rounded-xl border border-white/10 bg-slate-950/70 overflow-hidden">
+                              <button
+                                type="button"
+                                onClick={() => toggleDifficultyGroup(topicKey, level)}
+                                className="w-full px-4 py-3 hover:bg-slate-900/70 transition-colors"
+                              >
+                                <div className="flex items-center justify-between gap-4">
+                                  <div className="flex items-center gap-3">
+                                    <span
+                                      className={`px-3 py-1 rounded-full text-xs font-semibold border uppercase ${DIFFICULTY_STYLES[level]}`}
+                                    >
+                                      {level}
+                                    </span>
+                                    <span className="text-sm text-slate-400">
+                                      {difficultyProblems.length} {difficultyProblems.length === 1 ? "problem" : "problems"}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-xs uppercase tracking-[0.2em] text-slate-500">Difficulty</span>
+                                    <AccordionChevron open={isDifficultyOpen} />
+                                  </div>
+                                </div>
+                              </button>
+
+                              <div
+                                className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${isDifficultyOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+                              >
+                                <div className="overflow-hidden">
+                                  <div className="px-4 pb-4">
+                                    {difficultyProblems.length > 0 ? (
+                                      <div className="space-y-2">
+                                        {difficultyProblems.map((prob) => (
+                                          <div
+                                            key={prob._id}
+                                            className="rounded-xl border border-white/10 bg-slate-900/80 px-4 py-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
+                                          >
+                                            <div className="min-w-0">
+                                              <div className="flex flex-wrap items-center gap-2">
+                                                <div className="font-medium text-white truncate">{prob.title}</div>
+                                                <span
+                                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${solvedProblemMap[prob._id]
+                                                      ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
+                                                      : "bg-slate-900 text-slate-400 border-white/10"
+                                                    }`}
+                                                >
+                                                  <span
+                                                    className={`h-4 w-4 rounded border flex items-center justify-center ${solvedProblemMap[prob._id]
+                                                        ? "border-emerald-400/50 bg-emerald-500/20 text-emerald-200"
+                                                        : "border-white/20"
+                                                      }`}
+                                                  >
+                                                    {solvedProblemMap[prob._id] && (
+                                                      <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        strokeWidth={2}
+                                                        stroke="currentColor"
+                                                        className="h-3 w-3"
+                                                      >
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                                                      </svg>
+                                                    )}
+                                                  </span>
+                                                  {solvedProblemMap[prob._id] ? "Solved" : "Unsolved"}
+                                                </span>
+                                              </div>
+                                              <div className="mt-2 flex flex-wrap gap-2">
+                                                {toTopicArray(prob.tags).map((topic, idx) => (
+                                                  <span
+                                                    key={`${prob._id}-${topic}-${idx}`}
+                                                    className="px-2 py-0.5 rounded text-xs bg-slate-950 text-slate-400 border border-white/10"
+                                                  >
+                                                    {topic}
+                                                  </span>
+                                                ))}
+                                              </div>
+                                            </div>
+
+                                            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                                              <button
+                                                onClick={() => toggleFavorite(prob._id)}
+                                                className={`h-9 w-9 rounded-full border flex items-center justify-center transition-colors ${favorites[prob._id]
+                                                    ? "border-orange-500/30 bg-orange-500/10 text-orange-300"
+                                                    : "border-white/10 text-slate-500 hover:text-orange-300 hover:border-orange-500/40"
+                                                  }`}
+                                                title="Bookmark"
+                                              >
+                                                <svg
+                                                  xmlns="http://www.w3.org/2000/svg"
+                                                  fill={favorites[prob._id] ? "currentColor" : "none"}
+                                                  viewBox="0 0 24 24"
+                                                  strokeWidth={1.5}
+                                                  stroke="currentColor"
+                                                  className="w-5 h-5"
+                                                >
+                                                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.18v15.183a.75.75 0 0 1-1.241.572L12 17.25l-6.259 4.007a.75.75 0 0 1-1.241-.572V5.502c0-1.103.806-2.052 1.907-2.18a48.507 48.507 0 0 1 11.186 0Z" />
+                                                </svg>
+                                              </button>
+
+                                              {user?.role === "admin" && (
+                                                <button
+                                                  className="btn btn-sm bg-rose-500/20 text-rose-300 border-rose-400/30 hover:bg-rose-500/30"
+                                                  onClick={() => handleDeleteProblem(prob._id, prob.title)}
+                                                  disabled={deletingProblemId === prob._id}
+                                                >
+                                                  {deletingProblemId === prob._id ? "Deleting..." : "Delete"}
+                                                </button>
+                                              )}
+
+                                              <button
+                                                className="btn btn-sm bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-none shadow-sm transition-all font-medium"
+                                                onClick={() => navigate(`/problem/${prob._id}`)}
+                                              >
+                                                Solve Challenge
+                                              </button>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div className="rounded-xl border border-dashed border-white/10 px-4 py-3 text-sm text-slate-500">
+                                        No {level} problems in this topic.
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="rounded-2xl border border-white/10 bg-slate-900/70 px-6 py-10 text-center text-slate-500 text-lg">
+              No problems found
+            </div>
+          )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

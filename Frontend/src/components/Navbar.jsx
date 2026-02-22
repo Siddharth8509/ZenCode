@@ -30,21 +30,13 @@ export default function Navbar() {
     return (
         <nav className="fixed top-0 w-full z-50 transition-all duration-300 glass border-b border-white/10">
             <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-                {/* Logo */}
                 <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent hover:opacity-80 transition-opacity">
                     ZenCode
                 </Link>
 
-                {/* Links */}
                 <div className="flex items-center gap-6">
                     <Link to="/problemset" className="text-slate-300 hover:text-white font-medium transition-colors">
                         Problems
-                    </Link>
-                    <Link to="/learning-path" className="text-slate-300 hover:text-white font-medium transition-colors">
-                        Learning Path
-                    </Link>
-                    <Link to="/leaderboard" className="text-slate-300 hover:text-white font-medium transition-colors">
-                        Leaderboard
                     </Link>
                     {user && (
                         <Link to="/profile" className="text-slate-300 hover:text-white font-medium transition-colors">

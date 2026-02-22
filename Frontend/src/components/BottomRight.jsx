@@ -29,8 +29,8 @@ export default function BottomRight({ prop, output }) {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`h-full px-4 text-sm font-semibold border-b-2 transition-all ${activeTab === tab.id
-                ? "text-orange-300 border-orange-400 bg-orange-500/10"
-                : "text-slate-400 border-transparent hover:text-slate-200"
+              ? "text-orange-300 border-orange-400 bg-orange-500/10"
+              : "text-slate-400 border-transparent hover:text-slate-200"
               }`}
           >
             {tab.label}
@@ -39,7 +39,7 @@ export default function BottomRight({ prop, output }) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 min-h-0 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
         {activeTab === "testcase" && (
           <>
             <div className="flex gap-2">
@@ -48,8 +48,8 @@ export default function BottomRight({ prop, output }) {
                   key={idx}
                   onClick={() => setActiveCase(idx)}
                   className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${activeCase === idx
-                      ? "bg-orange-500/20 text-orange-300 border border-orange-500/30"
-                      : "bg-slate-900/70 text-slate-400 border border-white/10 hover:border-orange-500/40"
+                    ? "bg-orange-500/20 text-orange-300 border border-orange-500/30"
+                    : "bg-slate-900/70 text-slate-400 border border-white/10 hover:border-orange-500/40"
                     }`}
                 >
                   Case {idx + 1}
@@ -99,8 +99,8 @@ export default function BottomRight({ prop, output }) {
               <div className="space-y-4">
                 <div
                   className={`text-xl font-semibold ${output.problemStatus === "accepted"
-                      ? "text-emerald-300"
-                      : "text-rose-300"
+                    ? "text-emerald-300"
+                    : "text-rose-300"
                     }`}
                 >
                   {output.problemStatus?.replace("_", " ") || "Run complete"}
@@ -135,8 +135,8 @@ export default function BottomRight({ prop, output }) {
               <div className="space-y-4">
                 <div
                   className={`text-xl font-semibold ${(output.problemStatus || output.status) === "accepted"
-                      ? "text-emerald-300"
-                      : "text-rose-300"
+                    ? "text-emerald-300"
+                    : "text-rose-300"
                     }`}
                 >
                   {(output.problemStatus || output.status)?.replace("_", " ") || "Submitted"}
@@ -170,6 +170,7 @@ export default function BottomRight({ prop, output }) {
             )}
           </div>
         )}
+
       </div>
     </div>
   );
