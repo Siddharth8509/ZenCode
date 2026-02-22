@@ -88,10 +88,17 @@ const submitCode = async(req,res) => {
         submitedProblem.errorMessage = errorMessage;
         submitedProblem.status = problemStatus;
 
-        if(!userInfo.problemSolved.includes(problemData._id))
-        {    
-            userInfo.problemSolved.push(problemData);
-            await userInfo.save();
+        if (problemStatus === "accepted") 
+        {
+            const alreadySolved = userInfo.problemSolved.some(
+                (solvedProblemId) => solvedProblemId.toString() === problemData._id.toString()
+            );
+
+            if (!alreadySolved) 
+            {    
+                userInfo.problemSolved.push(problemData._id);
+                await userInfo.save();
+            }
         }
 
 

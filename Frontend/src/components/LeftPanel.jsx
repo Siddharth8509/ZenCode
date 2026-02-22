@@ -11,7 +11,8 @@ import {
 import { useState, useEffect } from "react";
 import { getSubmissionsApi } from "../api/submission";
 import { useParams } from "react-router-dom";
-import Markdown from 'react-markdown';
+import MarkdownPreview from "@uiw/react-markdown-preview";
+import Markdown from "react-markdown";
 
 export default function LeftPanel({ prop }) {
     const companies = Array.isArray(prop?.companies)
@@ -276,6 +277,7 @@ export default function LeftPanel({ prop }) {
                         )}
                     </div>
                 )}
+
                 {activeTab === "editorial" && (
                     <div className="space-y-6">
                         <div className="flex items-center gap-3">
@@ -284,14 +286,25 @@ export default function LeftPanel({ prop }) {
                         </div>
 
                         {prop?.editorial ? (
-                            <div className="rounded-2xl bg-slate-900/80 border border-white/10 overflow-hidden p-6">
-                                <div className="prose prose-invert prose-sm max-w-none text-slate-300 leading-relaxed
-                                    prose-headings:text-white prose-headings:font-semibold
-                                    prose-code:text-orange-300 prose-code:bg-slate-800/60 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded
-                                    prose-pre:bg-slate-950/80 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl
-                                    prose-strong:text-white prose-a:text-orange-400">
-                                    <Markdown>{prop.editorial}</Markdown>
-                                </div>
+                            <div className="rounded-2xl bg-slate-900/80 border border-white/10 overflow-hidden p-6 editorial-markdown" data-color-mode="dark">
+                                <style>{`
+                                    .editorial-markdown a.anchor {
+                                        display: none !important;
+                                        pointer-events: none !important;
+                                    }
+                                `}</style>
+                                <MarkdownPreview
+                                    source={prop.editorial}
+                                    style={{ padding: 16, backgroundColor: 'transparent' }}
+                                    components={{
+                                        a: ({ node, ...props }) => {
+                                            if (props.className && typeof props.className === 'string' && props.className.includes('anchor')) {
+                                                return null;
+                                            }
+                                            return <a {...props} />;
+                                        }
+                                    }}
+                                />
                             </div>
                         ) : (
                             <div className="rounded-2xl bg-slate-900/80 border border-white/10 p-8 text-center">

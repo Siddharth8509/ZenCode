@@ -195,8 +195,52 @@ const solvedProblemByUser = async (req, res) => {
         if (!userData)
             return res.status(404).send("User not found");
 
+        const solvedCount = userData.problemSolved.length;
+        const totalProblems = await problem.countDocuments();
+        const progressPercent = totalProblems
+            ? Math.round((solvedCount / totalProblems) * 100)
+            : 0;
 
-        return res.status(200).json({ solvedCount: userData.problemSolved.length, problems: userData.problemSolved });
+        const recentSolvedRaw = await submission.aggregate([
+            {
+                $match: {
+                    userId: new mongoose.Types.ObjectId(userId),
+                    status: "accepted"
+                }
+            },
+            { $sort: { createdAt: -1 } },
+            {
+                $group: {
+                    _id: "$problemId",
+                    solvedAt: { $first: "$createdAt" }
+                }
+            },
+            { $sort: { solvedAt: -1 } },
+            { $limit: 5 }
+        ]);
+
+        const recentSolvedProblemIds = recentSolvedRaw.map((entry) => entry._id);
+        const recentSolvedProblemDocs = await problem
+            .find({ _id: { $in: recentSolvedProblemIds } })
+            .select("title");
+
+        const titleByProblemId = new Map(
+            recentSolvedProblemDocs.map((doc) => [doc._id.toString(), doc.title || "Untitled Problem"])
+        );
+
+        const recentSolved = recentSolvedRaw.map((entry) => ({
+            problemId: entry._id.toString(),
+            title: titleByProblemId.get(entry._id.toString()) || "Untitled Problem",
+            solvedAt: entry.solvedAt
+        }));
+
+        return res.status(200).json({
+            solvedCount,
+            totalProblems,
+            progressPercent,
+            problems: userData.problemSolved,
+            recentSolved
+        });
     }
     catch (error) {
         return res.status(500).send("Failed to fetch data");

@@ -9,8 +9,6 @@ import { checkAuth } from './authSlice';
 import Problemset from './pages/Problemset';
 import Adminpage from './pages/Adminpage';
 import Problempage from './pages/Problempage';
-import Leaderboard from './pages/Leaderboard';
-import LearningPath from './pages/LearningPath';
 import Profile from './pages/Profile';
 
 function App() {
@@ -37,8 +35,7 @@ function App() {
         <Route path="/signup" element={isAuthenticated ? <Navigate to="/problemset" /> : <Signupform />} />
         <Route path="/problemset" element={isAuthenticated ? <Problemset /> : <Navigate to="/login" />} />
         <Route path="/admin" element={isAuthenticated ? <Adminpage /> : <Navigate to="/login" />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/learning-path" element={isAuthenticated ? <LearningPath /> : <Navigate to="/login" />} />
+        <Route path="/learning-path" element={<Navigate to="/problemset" replace />} />
         <Route path="/profile" element={isAuthenticated ? <Profile /> : <Navigate to="/login" />} />
         <Route path="/problem/:id" element={isAuthenticated ? <Problempage /> : <Navigate to="/login" />} />
       </Routes>

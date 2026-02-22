@@ -143,4 +143,65 @@ const deleteUser = async (req, res) => {
     }
 }
 
-export { registerUser, logoutUser, loginUser, adminRegister, deleteUser };
+const updateProfile = async (req, res) => {
+    try {
+        const id = req.userId;
+        if (!id) return res.status(401).send("Invalid token");
+
+        const { firstname, lastname, age, gender } = req.body;
+
+        // Find and update user, but strictly exclude email from updates
+        const updatedUser = await User.findByIdAndUpdate(
+            id,
+            { firstname, lastname, age, gender },
+            { new: true, runValidators: true }
+        ).select("-password");
+
+        if (!updatedUser) return res.status(404).send("User not found");
+
+        const reply = {
+            _id: updatedUser._id,
+            firstname: updatedUser.firstname,
+            lastname: updatedUser.lastname,
+            emailId: updatedUser.emailId,
+            role: updatedUser.role
+        };
+
+        res.status(200).json({
+            user: reply,
+            message: "Profile updated successfully"
+        });
+    } catch (error) {
+        res.status(500).send("Unexpected error occurred: " + error.message);
+    }
+}
+
+const resetPassword = async (req, res) => {
+    try {
+        const id = req.userId;
+        if (!id) return res.status(401).send("Invalid token");
+
+        const { oldPassword, newPassword } = req.body;
+        if (!oldPassword || !newPassword) {
+            return res.status(400).send("Please provide both old and new passwords");
+        }
+
+        const userExist = await User.findById(id);
+        if (!userExist) return res.status(404).send("User not found");
+
+        const verifyPassword = await bcrypt.compare(oldPassword, userExist.password);
+        if (!verifyPassword) {
+            return res.status(401).json({ error: "Incorrect old password" });
+        }
+
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+        userExist.password = hashedNewPassword;
+        await userExist.save();
+
+        res.status(200).json({ message: "Password reset successfully" });
+    } catch (error) {
+        res.status(500).send("Unexpected error occurred: " + error.message);
+    }
+}
+
+export { registerUser, logoutUser, loginUser, adminRegister, deleteUser, updateProfile, resetPassword };

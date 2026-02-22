@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import axiosClient from "../utils/axiosClient";
 import { useParams, useNavigate } from "react-router-dom";
 import Timer from "../components/Timer";
@@ -17,6 +17,7 @@ export default function Problempage() {
     const [output, setOutput] = useState(null);
     const [isRunning, setIsRunning] = useState(false);
     const [submissionPopup, setSubmissionPopup] = useState(null);
+    const [problemSequence, setProblemSequence] = useState([]);
 
     useEffect(() => {
         const fetchProblemData = async () => {
@@ -37,6 +38,61 @@ export default function Problempage() {
     }, [id])
 
     useEffect(() => {
+        let isCancelled = false;
+
+        const fetchProblemSequence = async () => {
+            try {
+                const allProblemIds = [];
+                let page = 1;
+                let hasMore = true;
+
+                while (hasMore) {
+                    const res = await axiosClient.get(`/problem/getAllProblems?page=${page}`);
+                    const fetchedProblems = Array.isArray(res.data?.problems) ? res.data.problems : [];
+                    fetchedProblems.forEach((problemDoc) => {
+                        if (problemDoc?._id) allProblemIds.push(problemDoc._id);
+                    });
+                    hasMore = Boolean(res.data?.hasMore);
+                    page += 1;
+                }
+
+                if (!isCancelled) {
+                    setProblemSequence(allProblemIds);
+                }
+            } catch (error) {
+                if (!isCancelled) {
+                    setProblemSequence([]);
+                }
+            }
+        };
+
+        fetchProblemSequence();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, []);
+
+    const currentProblemIndex = useMemo(
+        () => problemSequence.findIndex((problemId) => problemId === id),
+        [problemSequence, id]
+    );
+
+    const hasPreviousProblem = currentProblemIndex > 0;
+    const hasNextProblem =
+        currentProblemIndex !== -1 && currentProblemIndex < problemSequence.length - 1;
+
+    const handlePreviousProblem = () => {
+        if (!hasPreviousProblem) return;
+        navigate(`/problem/${problemSequence[currentProblemIndex - 1]}`);
+    };
+
+    const handleNextProblem = () => {
+        if (!hasNextProblem) return;
+        navigate(`/problem/${problemSequence[currentProblemIndex + 1]}`);
+    };
+
+    useEffect(() => {
         if (problemData?.initialCode) {
             const codeObj = problemData.initialCode.find((obj) => obj.language === language);
             if (codeObj) {
@@ -51,9 +107,15 @@ export default function Problempage() {
         if (!error) return fallback;
         if (typeof error === "string") return error;
         if (typeof error === "object") {
-            return error.message || error.errorMessage || fallback;
+            return (
+                error.message ||
+                error.errorMessage ||
+                error.error ||
+                (typeof error.data === "string" ? error.data : null) ||
+                fallback
+            );
         }
-        return fallback;
+        return String(error) || fallback;
     };
 
     const handleRun = async () => {
@@ -76,32 +138,30 @@ export default function Problempage() {
         try {
             const res = await submitCodeApi(id, code, language);
             if (res && typeof res === "object") {
-                const payload = { ...res, type: 'submit' };
-                setOutput(payload);
-                setSubmissionPopup({
-                    ...payload,
-                    language,
-                    timestamp: Date.now(),
-                });
+                // Sanitize every field to strings so React never tries to render objects
+                const safePayload = {
+                    type: 'submit',
+                    problemStatus: res.problemStatus ? String(res.problemStatus) : null,
+                    status: res.status ? String(res.status) : null,
+                    message: res.message ? String(res.message) : null,
+                    errorMessage: res.errorMessage ? String(res.errorMessage) : null,
+                    runtime: res.runtime != null ? Number(res.runtime) : null,
+                    memory: res.memory != null ? Number(res.memory) : null,
+                    testCasesPassed: res.testCasesPassed != null ? Number(res.testCasesPassed) : null,
+                    testCasesTotal: res.testCasesTotal != null ? Number(res.testCasesTotal) : null,
+                };
+                setOutput(safePayload);
+                setSubmissionPopup({ ...safePayload, language, timestamp: Date.now() });
             } else {
-                const payload = { message: res || "Problem submitted successfully", type: 'submit' };
+                const payload = { message: String(res || "Problem submitted successfully"), type: 'submit' };
                 setOutput(payload);
-                setSubmissionPopup({
-                    ...payload,
-                    language,
-                    timestamp: Date.now(),
-                });
+                setSubmissionPopup({ ...payload, language, timestamp: Date.now() });
             }
         } catch (error) {
             console.error(error);
             const errorMessage = getErrorMessage(error, "Error submitting code");
             setOutput({ errorMessage, type: 'error' });
-            setSubmissionPopup({
-                errorMessage,
-                type: "error",
-                language,
-                timestamp: Date.now(),
-            });
+            setSubmissionPopup({ errorMessage, type: "error", language, timestamp: Date.now() });
         } finally {
             setIsRunning(false);
         }
@@ -128,12 +188,22 @@ export default function Problempage() {
                             </button>
 
                             <div className="join">
-                                <button className="btn btn-sm btn-ghost join-item text-slate-400 hover:bg-white/5">
+                                <button
+                                    className="btn btn-sm btn-ghost join-item text-slate-400 hover:bg-white/5 disabled:opacity-40"
+                                    onClick={handlePreviousProblem}
+                                    disabled={!hasPreviousProblem}
+                                    title="Previous problem"
+                                >
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
                                     </svg>
                                 </button>
-                                <button className="btn btn-sm btn-ghost join-item text-slate-400 hover:bg-white/5">
+                                <button
+                                    className="btn btn-sm btn-ghost join-item text-slate-400 hover:bg-white/5 disabled:opacity-40"
+                                    onClick={handleNextProblem}
+                                    disabled={!hasNextProblem}
+                                    title="Next problem"
+                                >
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
                                     </svg>
@@ -240,9 +310,7 @@ export default function Problempage() {
                                     <div className="text-xl font-semibold text-white">
                                         {submissionPopup.type === "error"
                                             ? "Submission Failed"
-                                            : (submissionPopup.problemStatus || submissionPopup.status)
-                                                ? (submissionPopup.problemStatus || submissionPopup.status).replace("_", " ")
-                                                : "Submitted"}
+                                            : String(submissionPopup.problemStatus || submissionPopup.status || "Submitted").replace(/_/g, " ")}
                                     </div>
                                 </div>
                             </div>
@@ -268,26 +336,32 @@ export default function Problempage() {
                         </div>
 
                         {submissionPopup.errorMessage && (
-                            <div className="mt-4 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-rose-200 text-sm">
-                                {submissionPopup.errorMessage}
+                            <div className="mt-4 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-rose-200 text-sm font-mono whitespace-pre-wrap break-all">
+                                {String(submissionPopup.errorMessage)}
                             </div>
                         )}
 
                         {submissionPopup.message && (
                             <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-emerald-200 text-sm">
-                                {submissionPopup.message}
+                                {String(submissionPopup.message)}
                             </div>
                         )}
 
-                        {(submissionPopup.runtime || submissionPopup.memory) && (
+                        {(submissionPopup.testCasesPassed != null || submissionPopup.runtime != null || submissionPopup.memory != null) && (
                             <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                                {submissionPopup.testCasesPassed != null && (
+                                    <div className="rounded-xl border border-white/10 bg-slate-900/60 p-3 col-span-2">
+                                        <div className="text-xs text-slate-500 uppercase">Test Cases</div>
+                                        <div className="font-mono text-white">{submissionPopup.testCasesPassed} / {submissionPopup.testCasesTotal}</div>
+                                    </div>
+                                )}
                                 <div className="rounded-xl border border-white/10 bg-slate-900/60 p-3">
                                     <div className="text-xs text-slate-500 uppercase">Runtime</div>
-                                    <div className="text-white">{submissionPopup.runtime} ms</div>
+                                    <div className="text-white">{submissionPopup.runtime ?? "-"} ms</div>
                                 </div>
                                 <div className="rounded-xl border border-white/10 bg-slate-900/60 p-3">
                                     <div className="text-xs text-slate-500 uppercase">Memory</div>
-                                    <div className="text-white">{submissionPopup.memory} KB</div>
+                                    <div className="text-white">{submissionPopup.memory ?? "-"} KB</div>
                                 </div>
                             </div>
                         )}

@@ -186,7 +186,7 @@ export default function Signupform() {
               Structured learning, daily prompts, and curated practice for every level.
             </p>
             <div className="grid grid-cols-2 gap-4 text-sm">
-              {["DSA roadmap", "Progress analytics", "Study rooms", "Leaderboard"].map((item) => (
+              {["DSA roadmap", "Progress analytics", "Study rooms", "Mock interview mode"].map((item) => (
                 <div key={item} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-300">
                   {item}
                 </div>

@@ -26,21 +26,54 @@ app.use(cors({
     credentials: true,
 }));
 
-const port = process.env.PORT || 3000
-async function connection() {
-    await redisClient.connect();
-    console.log("Redis client is connected");
-
-    await dbConnection();
-    console.log("Connected to database");
-
-    app.listen(port, () => {
-        console.log(`Server is running on port no. ${port}`);
-    })
-}
-
-connection();
-
 app.use("/user", authRouter);
 app.use("/problem", problemRouter);
 app.use("/submission", submissionRouter);
+// If not on Vercel, start the server normally. If on Vercel, export the app.
+if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+    const port = process.env.PORT || 3000;
+
+    async function connection() {
+        try {
+            await redisClient.connect();
+            console.log("Redis client is connected");
+        } catch (err) {
+            console.error("Redis connection error:", err);
+        }
+
+        try {
+            await dbConnection();
+            console.log("Connected to database");
+        } catch (err) {
+            console.error("Database connection error:", err);
+        }
+
+        app.listen(port, () => {
+            console.log(`Server is running on port no. ${port}`);
+        });
+    }
+
+    connection();
+} else {
+    // For Vercel Serverless environment, we still need to ensure DB connections
+    // before the first request, but Vercel handles the listening.
+    // The easiest way is to let the first request trigger the connection.
+    let isConnected = false;
+    app.use(async (req, res, next) => {
+        if (!isConnected) {
+            try {
+                await dbConnection();
+                // Optionally connect Redis here if using Upstash or similar external Redis
+                // await redisClient.connect(); 
+                isConnected = true;
+                console.log("Serverless functions connected to database");
+            } catch (err) {
+                console.error("Failed to connect to database in serverless function:", err);
+            }
+        }
+        next();
+    });
+}
+
+// Required for Vercel Serverless Functions
+export default app;

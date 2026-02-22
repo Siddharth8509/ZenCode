@@ -57,6 +57,36 @@ export const logoutUser = createAsyncThunk(
   }
 );
 
+// UPDATE PROFILE
+export const updateProfile = createAsyncThunk(
+  "auth/updateProfile",
+  async (profileData, { rejectWithValue }) => {
+    try {
+      const { data } = await axiosClient.patch("/user/profile", profileData);
+      return data.user;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || error.response?.data || "Profile update failed"
+      );
+    }
+  }
+);
+
+// RESET PASSWORD
+export const resetPassword = createAsyncThunk(
+  "auth/resetPassword",
+  async (passwordData, { rejectWithValue }) => {
+    try {
+      const { data } = await axiosClient.post("/user/reset-password", passwordData);
+      return data.message;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.error || error.response?.data || "Password reset failed"
+      );
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: "auth",
   initialState: {
@@ -130,6 +160,20 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.loading = false;
         state.error = null;
+      })
+
+      // UPDATE PROFILE
+      .addCase(updateProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.user = action.payload;
+        state.loading = false;
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });

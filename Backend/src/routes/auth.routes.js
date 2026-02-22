@@ -1,5 +1,5 @@
 import express from "express";
-import { registerUser, loginUser, logoutUser, adminRegister, deleteUser } from "../controllers/UserAuth.controller.js";
+import { registerUser, loginUser, logoutUser, adminRegister, deleteUser, updateProfile, resetPassword } from "../controllers/UserAuth.controller.js";
 import authMiddleware from "../middleware/auth.middleware.js";
 import adminMiddleware from "../middleware/admin.middleware.js";
 
@@ -10,6 +10,8 @@ authRouter.post("/logout", authMiddleware, logoutUser);
 authRouter.post("/register", registerUser);
 authRouter.post("/admin/register", adminMiddleware, adminRegister);
 authRouter.delete("/delete/:id", authMiddleware, deleteUser);
+authRouter.patch("/profile", authMiddleware, updateProfile);
+authRouter.post("/reset-password", authMiddleware, resetPassword);
 authRouter.get("/check", authMiddleware, (req, res) => {
     const reply = {
         firstname: req.result.firstname,
