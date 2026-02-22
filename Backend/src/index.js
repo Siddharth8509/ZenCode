@@ -26,52 +26,46 @@ app.use(cors({
     credentials: true,
 }));
 
+// Database connection management for Serverless
+let isConnected = false;
+let isRedisConnected = false;
+
+app.use(async (req, res, next) => {
+    // Only connect if not already connected (crucial for Vercel warm starts)
+    if (!isConnected) {
+        try {
+            await dbConnection();
+            isConnected = true;
+            console.log("Database connected successfully");
+        } catch (err) {
+            console.error("Database connection failed:", err);
+            // Don't block the request, let the route handlers fail gracefully if needed
+        }
+    }
+
+    if (!isRedisConnected && process.env.REDIS_URL) {
+        try {
+            // Only try connecting if REDIS_URL exists, otherwise skip to avoid hang
+            await redisClient.connect();
+            isRedisConnected = true;
+            console.log("Redis connected successfully");
+        } catch (err) {
+            console.error("Redis connection failed (Continuing without Redis):", err);
+        }
+    }
+
+    next();
+});
+
 app.use("/user", authRouter);
 app.use("/problem", problemRouter);
 app.use("/submission", submissionRouter);
-// If not on Vercel, start the server normally. If on Vercel, export the app.
+
+// If running locally (not on Vercel), start the listener
 if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
     const port = process.env.PORT || 3000;
-
-    async function connection() {
-        try {
-            await redisClient.connect();
-            console.log("Redis client is connected");
-        } catch (err) {
-            console.error("Redis connection error:", err);
-        }
-
-        try {
-            await dbConnection();
-            console.log("Connected to database");
-        } catch (err) {
-            console.error("Database connection error:", err);
-        }
-
-        app.listen(port, () => {
-            console.log(`Server is running on port no. ${port}`);
-        });
-    }
-
-    connection();
-} else {
-    // For Vercel Serverless environment, we still need to ensure DB connections
-    // before the first request, but Vercel handles the listening.
-    // The easiest way is to let the first request trigger the connection.
-    let isConnected = false;
-    app.use(async (req, res, next) => {
-        if (!isConnected) {
-            try {
-                await dbConnection();
-                // Optionally connect Redis here if using Upstash or similar external Redis
-                // await redisClient.connect(); 
-                isConnected = true;
-                console.log("Serverless functions connected to database");
-            } catch (err) {
-                console.error("Failed to connect to database in serverless function:", err);
-            }
-        }
-        next();
+    app.listen(port, () => {
+        console.log(`Local server is running on port no. ${port}`);
     });
 }
 
