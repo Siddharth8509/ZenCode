@@ -26,35 +26,12 @@ app.use(cors({
     credentials: true,
 }));
 
-// Database connection management for Serverless
-let isConnected = false;
-let isRedisConnected = false;
+// Database connection (Mongoose buffers commands, so we can call this unconditionally)
+dbConnection().then(() => console.log("DB Connected")).catch(err => console.error("DB Error:", err));
 
-app.use(async (req, res, next) => {
-    // Only connect if not already connected (crucial for Vercel warm starts)
-    if (!isConnected) {
-        try {
-            await dbConnection();
-            isConnected = true;
-            console.log("Database connected successfully");
-        } catch (err) {
-            console.error("Database connection failed:", err);
-            // Don't block the request, let the route handlers fail gracefully if needed
-        }
-    }
-
-    if (!isRedisConnected && process.env.REDIS_URL) {
-        try {
-            // Only try connecting if REDIS_URL exists, otherwise skip to avoid hang
-            await redisClient.connect();
-            isRedisConnected = true;
-            console.log("Redis connected successfully");
-        } catch (err) {
-            console.error("Redis connection failed (Continuing without Redis):", err);
-        }
-    }
-
-    next();
+// Add a simple ping route to verify the Vercel function is alive
+app.get("/", (req, res) => {
+    res.status(200).json({ status: "success", message: "ZenCode Backend is running!" });
 });
 
 app.use("/user", authRouter);
@@ -64,6 +41,12 @@ app.use("/submission", submissionRouter);
 // If running locally (not on Vercel), start the listener
 if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
     const port = process.env.PORT || 3000;
+
+    // Connect Redis only locally to prevent Vercel crashes if no Upstash URL is provided
+    redisClient.connect()
+        .then(() => console.log("Redis connected locally"))
+        .catch(err => console.error("Local Redis error:", err));
+
     app.listen(port, () => {
         console.log(`Local server is running on port no. ${port}`);
     });
