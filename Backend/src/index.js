@@ -8,8 +8,9 @@ import redisClient from "./config/redis.js";
 import problemRouter from "./routes/problem.routes.js";
 import submissionRouter from "./routes/submission.routes.js";
 import cors from "cors";
+import { fileURLToPath } from "url";
 
-dotenv.config();
+dotenv.config({ path: fileURLToPath(new URL("../.env", import.meta.url)) });
 const app = express();
 
 app.use(express.json());

@@ -1,8 +1,9 @@
 import redisClient from "../config/redis.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import { fileURLToPath } from "url";
 
-dotenv.config();
+dotenv.config({ path: fileURLToPath(new URL("../../.env", import.meta.url)) });
 
 const adminMiddleware = async(req,res,next)=>{
     try 

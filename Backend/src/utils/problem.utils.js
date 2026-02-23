@@ -1,6 +1,8 @@
 import axios from 'axios';
 import dotenv from "dotenv"
-dotenv.config();
+import { fileURLToPath } from "url";
+
+dotenv.config({ path: fileURLToPath(new URL("../../.env", import.meta.url)) });
 
 function getLanguageId(lang) {
   const language = {
