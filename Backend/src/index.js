@@ -26,8 +26,32 @@ app.use(cors({
     credentials: true,
 }));
 
-// Database connection (Mongoose buffers commands, so we can call this unconditionally)
-dbConnection().then(() => console.log("DB Connected")).catch(err => console.error("DB Error:", err));
+const port = process.env.PORT || 3000;
+
+async function connection() {
+    try {
+        await redisClient.connect();
+        console.log("Redis client is connected");
+    } catch (err) {
+        console.error("Redis connection error:", err);
+    }
+
+    try {
+        await dbConnection();
+        console.log("Connected to database");
+    } catch (err) {
+        console.error("Database connection error:", err);
+    }
+
+    // Only listen on a port if not running in Vercel Serverless mode
+    if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+        app.listen(port, () => {
+            console.log(`Server is running on port no. ${port}`);
+        });
+    }
+}
+
+connection();
 
 // Add a simple ping route to verify the Vercel function is alive
 app.get("/", (req, res) => {
@@ -37,20 +61,6 @@ app.get("/", (req, res) => {
 app.use("/user", authRouter);
 app.use("/problem", problemRouter);
 app.use("/submission", submissionRouter);
-
-// If running locally (not on Vercel), start the listener
-if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
-    const port = process.env.PORT || 3000;
-
-    // Connect Redis only locally to prevent Vercel crashes if no Upstash URL is provided
-    redisClient.connect()
-        .then(() => console.log("Redis connected locally"))
-        .catch(err => console.error("Local Redis error:", err));
-
-    app.listen(port, () => {
-        console.log(`Local server is running on port no. ${port}`);
-    });
-}
 
 // Required for Vercel Serverless Functions
 export default app;
