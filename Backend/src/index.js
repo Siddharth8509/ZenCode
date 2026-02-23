@@ -57,5 +57,3 @@ app.get("/", (req, res) => {
 app.use("/user", authRouter);
 app.use("/problem", problemRouter);
 app.use("/submission", submissionRouter);
-
-export default app;
