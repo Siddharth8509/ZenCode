@@ -16,8 +16,8 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
     origin: function (origin, callback) {
-        const allowedOrigins = [process.env.CLIENT_URL];
-        if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:')) {
+        const allowedOrigins = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map(url => url.trim().replace(/\/$/, "")) : [];
+        if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:') || origin.endsWith('.vercel.app')) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
