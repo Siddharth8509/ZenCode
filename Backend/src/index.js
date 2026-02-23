@@ -1,7 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
-import mongoose from "mongoose";
 import dbConnection from "./config/database.js";
 import authRouter from "./routes/auth.routes.js";
 import redisClient from "./config/redis.js";
@@ -44,17 +43,13 @@ async function connection() {
         console.error("Database connection error:", err);
     }
 
-    // Only listen on a port if not running in Vercel Serverless mode
-    if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
-        app.listen(port, () => {
-            console.log(`Server is running on port no. ${port}`);
-        });
-    }
+    app.listen(port, () => {
+        console.log(`Server is running on port no. ${port}`);
+    });
 }
 
 connection();
 
-// Add a simple ping route to verify the Vercel function is alive
 app.get("/", (req, res) => {
     res.status(200).json({ status: "success", message: "ZenCode Backend is running!" });
 });
@@ -63,5 +58,4 @@ app.use("/user", authRouter);
 app.use("/problem", problemRouter);
 app.use("/submission", submissionRouter);
 
-// Required for Vercel Serverless Functions
 export default app;
