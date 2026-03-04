@@ -35,7 +35,7 @@ function AccordionChevron({ open }) {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 20 20"
       fill="currentColor"
-      className={`h-4 w-4 text-slate-400 transition-transform duration-300 ${open ? "rotate-90" : ""}`}
+      className={`h-4 w-4 text-neutral-400 transition-transform duration-300 ${open ? "rotate-90" : ""}`}
     >
       <path
         fillRule="evenodd"
@@ -268,7 +268,7 @@ export default function Problemset() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="min-h-screen bg-black text-white">
       <Navbar />
 
       <div className="container mx-auto px-5 pt-24 pb-10">
@@ -276,7 +276,7 @@ export default function Problemset() {
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
               <h2 className="text-3xl font-bold text-white mb-2">Problems</h2>
-              <p className="text-slate-400">Curated list of challenges to sharpen your DSA skills.</p>
+              <p className="text-neutral-400">Curated list of challenges to sharpen your DSA skills.</p>
             </div>
             <div className="flex items-center gap-3">
               {user?.role === "admin" && (
@@ -299,19 +299,19 @@ export default function Problemset() {
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="glass-panel p-4 rounded-2xl border border-white/10">
-              <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Total</div>
+              <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Total</div>
               <div className="text-2xl font-semibold">{stats.total}</div>
             </div>
             <div className="glass-panel p-4 rounded-2xl border border-white/10">
-              <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Easy</div>
+              <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Easy</div>
               <div className="text-2xl font-semibold text-emerald-400">{stats.easy}</div>
             </div>
             <div className="glass-panel p-4 rounded-2xl border border-white/10">
-              <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Medium</div>
+              <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Medium</div>
               <div className="text-2xl font-semibold text-amber-400">{stats.medium}</div>
             </div>
             <div className="glass-panel p-4 rounded-2xl border border-white/10">
-              <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Hard</div>
+              <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Hard</div>
               <div className="text-2xl font-semibold text-rose-400">{stats.hard}</div>
             </div>
           </div>
@@ -319,14 +319,14 @@ export default function Problemset() {
           <div className="glass-panel p-4 rounded-2xl border border-white/10">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Progress</div>
-                <div className="text-sm text-slate-400 mt-1">
+                <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Progress</div>
+                <div className="text-sm text-neutral-400 mt-1">
                   {solvedCount} solved out of {stats.total}
                 </div>
               </div>
               <div className="text-2xl font-semibold text-emerald-300">{solvedProgress}%</div>
             </div>
-            <div className="mt-3 h-3 w-full rounded-full bg-slate-900/70 border border-white/10 overflow-hidden">
+            <div className="mt-3 h-3 w-full rounded-full bg-neutral-900/70 border border-white/10 overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-emerald-500 via-green-400 to-teal-400 transition-all duration-500"
                 style={{ width: `${solvedProgress}%` }}
@@ -334,7 +334,7 @@ export default function Problemset() {
             </div>
           </div>
 
-          <div className="text-sm text-slate-400">Showing {stats.total} problems</div>
+          <div className="text-sm text-neutral-400">Showing {stats.total} problems</div>
 
           {fetchError && (
             <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
@@ -362,21 +362,21 @@ export default function Problemset() {
               const isTopicOpen = Boolean(openTopics[topicKey]);
 
               return (
-                <div key={topicKey} className="rounded-2xl border border-white/10 bg-slate-900/70 overflow-hidden">
+                <div key={topicKey} className="rounded-2xl border border-white/10 bg-neutral-900/70 overflow-hidden">
                   <button
                     type="button"
                     onClick={() => toggleTopic(topicKey)}
-                    className="w-full px-5 py-4 hover:bg-slate-900/80 transition-colors"
+                    className="w-full px-5 py-4 hover:bg-neutral-900/80 transition-colors"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="text-left">
                         <h3 className="text-lg font-semibold text-white">{topicGroup.topic}</h3>
-                        <p className="text-xs text-slate-500 uppercase tracking-[0.2em] mt-1">
+                        <p className="text-xs text-neutral-500 uppercase tracking-[0.2em] mt-1">
                           {topicGroup.total} {topicGroup.total === 1 ? "Problem" : "Problems"}
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-xs uppercase tracking-[0.2em] text-slate-500">Topic</span>
+                        <span className="text-xs uppercase tracking-[0.2em] text-neutral-500">Topic</span>
                         <AccordionChevron open={isTopicOpen} />
                       </div>
                     </div>
@@ -393,11 +393,11 @@ export default function Problemset() {
                           const isDifficultyOpen = Boolean(openDifficultyGroups[difficultyKey]);
 
                           return (
-                            <div key={difficultyKey} className="rounded-xl border border-white/10 bg-slate-950/70 overflow-hidden">
+                            <div key={difficultyKey} className="rounded-xl border border-white/10 bg-black/70 overflow-hidden">
                               <button
                                 type="button"
                                 onClick={() => toggleDifficultyGroup(topicKey, level)}
-                                className="w-full px-4 py-3 hover:bg-slate-900/70 transition-colors"
+                                className="w-full px-4 py-3 hover:bg-neutral-900/70 transition-colors"
                               >
                                 <div className="flex items-center justify-between gap-4">
                                   <div className="flex items-center gap-3">
@@ -406,12 +406,12 @@ export default function Problemset() {
                                     >
                                       {level}
                                     </span>
-                                    <span className="text-sm text-slate-400">
+                                    <span className="text-sm text-neutral-400">
                                       {difficultyProblems.length} {difficultyProblems.length === 1 ? "problem" : "problems"}
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-3">
-                                    <span className="text-xs uppercase tracking-[0.2em] text-slate-500">Difficulty</span>
+                                    <span className="text-xs uppercase tracking-[0.2em] text-neutral-500">Difficulty</span>
                                     <AccordionChevron open={isDifficultyOpen} />
                                   </div>
                                 </div>
@@ -427,7 +427,7 @@ export default function Problemset() {
                                         {difficultyProblems.map((prob) => (
                                           <div
                                             key={prob._id}
-                                            className="rounded-xl border border-white/10 bg-slate-900/80 px-4 py-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
+                                            className="rounded-xl border border-white/10 bg-neutral-900/80 px-4 py-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
                                           >
                                             <div className="min-w-0">
                                               <div className="flex flex-wrap items-center gap-2">
@@ -435,7 +435,7 @@ export default function Problemset() {
                                                 <span
                                                   className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${solvedProblemMap[prob._id]
                                                       ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
-                                                      : "bg-slate-900 text-slate-400 border-white/10"
+                                                      : "bg-neutral-900 text-neutral-400 border-white/10"
                                                     }`}
                                                 >
                                                   <span
@@ -464,7 +464,7 @@ export default function Problemset() {
                                                 {toTopicArray(prob.tags).map((topic, idx) => (
                                                   <span
                                                     key={`${prob._id}-${topic}-${idx}`}
-                                                    className="px-2 py-0.5 rounded text-xs bg-slate-950 text-slate-400 border border-white/10"
+                                                    className="px-2 py-0.5 rounded text-xs bg-black text-neutral-400 border border-white/10"
                                                   >
                                                     {topic}
                                                   </span>
@@ -477,7 +477,7 @@ export default function Problemset() {
                                                 onClick={() => toggleFavorite(prob._id)}
                                                 className={`h-9 w-9 rounded-full border flex items-center justify-center transition-colors ${favorites[prob._id]
                                                     ? "border-orange-500/30 bg-orange-500/10 text-orange-300"
-                                                    : "border-white/10 text-slate-500 hover:text-orange-300 hover:border-orange-500/40"
+                                                    : "border-white/10 text-neutral-500 hover:text-orange-300 hover:border-orange-500/40"
                                                   }`}
                                                 title="Bookmark"
                                               >
@@ -514,7 +514,7 @@ export default function Problemset() {
                                         ))}
                                       </div>
                                     ) : (
-                                      <div className="rounded-xl border border-dashed border-white/10 px-4 py-3 text-sm text-slate-500">
+                                      <div className="rounded-xl border border-dashed border-white/10 px-4 py-3 text-sm text-neutral-500">
                                         No {level} problems in this topic.
                                       </div>
                                     )}
@@ -531,7 +531,7 @@ export default function Problemset() {
               );
             })
           ) : (
-            <div className="rounded-2xl border border-white/10 bg-slate-900/70 px-6 py-10 text-center text-slate-500 text-lg">
+            <div className="rounded-2xl border border-white/10 bg-neutral-900/70 px-6 py-10 text-center text-neutral-500 text-lg">
               No problems found
             </div>
           )}

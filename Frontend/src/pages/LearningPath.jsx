@@ -132,7 +132,7 @@ export default function LearningPath() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white selection:bg-orange-500/20 font-sans">
+    <div className="min-h-screen bg-black text-white selection:bg-orange-500/20 font-sans">
       <Navbar />
 
       <div className="relative pt-28 pb-20 overflow-hidden">
@@ -148,19 +148,19 @@ export default function LearningPath() {
             transition={{ duration: 0.7, ease: "easeOut" }}
             className="max-w-3xl"
           >
-            <div className="path-reveal inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-slate-900/70 text-xs uppercase tracking-[0.3em] text-slate-500">
+            <div className="path-reveal inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-neutral-900/70 text-xs uppercase tracking-[0.3em] text-neutral-500">
               Structured Learning
             </div>
             <h1 className="path-reveal mt-6 text-4xl md:text-6xl font-semibold tracking-tight">
               Your DSA Journey, <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-400">organized by mastery</span>
             </h1>
-            <p className="path-reveal mt-6 text-lg text-slate-400 max-w-2xl">
+            <p className="path-reveal mt-6 text-lg text-neutral-400 max-w-2xl">
               Work through a curated set of questions from basic to advanced. Track your progress, unlock milestones, and build confidence one section at a time.
             </p>
           </motion.div>
 
           <div className="mt-10 path-reveal">
-            <div className="flex items-center justify-between text-sm text-slate-400">
+            <div className="flex items-center justify-between text-sm text-neutral-400">
               <span>{completedCount} / {totalCount} solved</span>
               <span>{progress}% complete</span>
             </div>
@@ -174,21 +174,21 @@ export default function LearningPath() {
 
           <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="path-reveal glass-panel p-5 rounded-2xl border border-white/10">
-              <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Daily Goal</div>
+              <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Daily Goal</div>
               <div className="mt-2 flex items-center justify-between">
                 <div className="text-2xl font-semibold">{dailyGoal} questions</div>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setDailyGoal((g) => Math.max(1, g - 1))}
-                    className="h-8 w-8 rounded-full border border-white/10 hover:border-orange-400/60 text-slate-400"
+                    className="h-8 w-8 rounded-full border border-white/10 hover:border-orange-400/60 text-neutral-400"
                   >
                     -
                   </button>
                   <button
                     type="button"
                     onClick={() => setDailyGoal((g) => Math.min(10, g + 1))}
-                    className="h-8 w-8 rounded-full border border-white/10 hover:border-orange-400/60 text-slate-400"
+                    className="h-8 w-8 rounded-full border border-white/10 hover:border-orange-400/60 text-neutral-400"
                   >
                     +
                   </button>
@@ -200,15 +200,15 @@ export default function LearningPath() {
                   style={{ width: `${Math.round((todayProgress / safeGoal) * 100)}%` }}
                 />
               </div>
-              <div className="mt-2 text-xs text-slate-500">Today: {todayProgress}/{safeGoal}</div>
+              <div className="mt-2 text-xs text-neutral-500">Today: {todayProgress}/{safeGoal}</div>
             </div>
 
             <div className="path-reveal glass-panel p-5 rounded-2xl border border-white/10">
-              <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Next Up</div>
+              <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Next Up</div>
               {nextUp ? (
                 <div className="mt-3 space-y-2">
                   <div className="text-lg font-semibold">{nextUp.question}</div>
-                  <div className="text-sm text-slate-500">Section: {nextUp.sectionTitle}</div>
+                  <div className="text-sm text-neutral-500">Section: {nextUp.sectionTitle}</div>
                   <button
                     type="button"
                     onClick={() => setOpenId(nextUp.sectionId)}
@@ -218,21 +218,21 @@ export default function LearningPath() {
                   </button>
                 </div>
               ) : (
-                <div className="mt-3 text-sm text-slate-500">You've completed the path. Great work!</div>
+                <div className="mt-3 text-sm text-neutral-500">You've completed the path. Great work!</div>
               )}
             </div>
 
             <div className="path-reveal glass-panel p-5 rounded-2xl border border-white/10">
-              <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Focus Mode</div>
+              <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">Focus Mode</div>
               <div className="mt-3 flex items-center justify-between">
                 <div>
                   <div className="text-lg font-semibold">{showSolved ? "Show all questions" : "Hide solved"}</div>
-                  <div className="text-sm text-slate-500">Reduce clutter while practicing.</div>
+                  <div className="text-sm text-neutral-500">Reduce clutter while practicing.</div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowSolved((s) => !s)}
-                  className={`px-4 py-2 rounded-full text-sm font-semibold border transition-colors ${showSolved ? "border-white/10 text-slate-400" : "border-orange-400/60 text-orange-300"
+                  className={`px-4 py-2 rounded-full text-sm font-semibold border transition-colors ${showSolved ? "border-white/10 text-neutral-400" : "border-orange-400/60 text-orange-300"
                     }`}
                 >
                   {showSolved ? "Hide Solved" : "Show All"}
@@ -245,18 +245,18 @@ export default function LearningPath() {
             {PATH_DATA.map((section) => (
               <div
                 key={section.id}
-                className="path-reveal border border-white/10 rounded-2xl overflow-hidden bg-slate-900/70"
+                className="path-reveal border border-white/10 rounded-2xl overflow-hidden bg-neutral-900/70"
               >
                 <button
                   type="button"
                   onClick={() => setOpenId((prev) => (prev === section.id ? "" : section.id))}
-                  className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-slate-950 transition-colors"
+                  className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-black transition-colors"
                 >
                   <div>
                     <h3 className="text-2xl font-semibold">{section.title}</h3>
-                    <p className="text-sm text-slate-500">{section.subtitle}</p>
+                    <p className="text-sm text-neutral-500">{section.subtitle}</p>
                   </div>
-                  <div className="text-sm uppercase tracking-[0.2em] text-slate-500">
+                  <div className="text-sm uppercase tracking-[0.2em] text-neutral-500">
                     {openId === section.id ? "Collapse" : "Expand"}
                   </div>
                 </button>
@@ -273,16 +273,16 @@ export default function LearningPath() {
                         return (
                           <label
                             key={key}
-                            className="flex items-start gap-3 p-4 rounded-xl border border-white/10 bg-slate-900/70 hover:bg-slate-950 transition-colors"
+                            className="flex items-start gap-3 p-4 rounded-xl border border-white/10 bg-neutral-900/70 hover:bg-black transition-colors"
                           >
                             <input
                               type="checkbox"
                               checked={!!checked[key]}
                               onChange={() => handleToggle(section.id, index)}
-                              className="mt-1 h-4 w-4 rounded border-white/20 bg-slate-900/70 text-orange-400 focus:ring-orange-400"
+                              className="mt-1 h-4 w-4 rounded border-white/20 bg-neutral-900/70 text-orange-400 focus:ring-orange-400"
                             />
                             <div>
-                              <div className="text-sm text-slate-500">Question {index + 1}</div>
+                              <div className="text-sm text-neutral-500">Question {index + 1}</div>
                               <div className="text-base font-medium text-white">{question}</div>
                             </div>
                           </label>
