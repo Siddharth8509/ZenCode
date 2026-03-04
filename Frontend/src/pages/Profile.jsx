@@ -217,7 +217,7 @@ export default function Profile() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white selection:bg-orange-500/20">
+    <div className="min-h-screen bg-black text-white selection:bg-orange-500/20">
       <Navbar />
 
       <div className="relative pt-28 pb-20 overflow-hidden">
@@ -233,7 +233,7 @@ export default function Profile() {
                 <div className="h-28 w-28 rounded-2xl bg-gradient-to-br from-orange-500/40 to-red-500/30 flex items-center justify-center text-5xl font-bold text-white shadow-2xl border border-white/10">
                   {initials}
                 </div>
-                <div className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-emerald-500 border-4 border-slate-950 flex items-center justify-center">
+                <div className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-emerald-500 border-4 border-neutral-950 flex items-center justify-center">
                   <span className="text-[10px] font-bold">OK</span>
                 </div>
               </div>
@@ -242,12 +242,12 @@ export default function Profile() {
                 <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
                   {user?.firstname} {user?.lastname}
                 </h1>
-                <p className="text-slate-400 mt-1 text-lg">{user?.emailId}</p>
+                <p className="text-neutral-400 mt-1 text-lg">{user?.emailId}</p>
                 <div className="mt-4 flex flex-wrap items-center justify-center md:justify-start gap-3">
                   <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-orange-500/30 bg-orange-500/10 text-orange-300 text-xs uppercase tracking-[0.25em] font-semibold">
                     {user?.role || "Member"}
                   </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-slate-400 text-xs">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 text-neutral-400 text-xs">
                     <CalendarDaysIcon className="h-3.5 w-3.5" />
                     Joined {user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "Recently"}
                   </span>
@@ -263,7 +263,7 @@ export default function Profile() {
                   <div className={`h-9 w-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center ${stat.color}`}>
                     <stat.icon className="h-4.5 w-4.5" />
                   </div>
-                  <span className="text-xs uppercase tracking-[0.15em] text-slate-500">{stat.label}</span>
+                  <span className="text-xs uppercase tracking-[0.15em] text-neutral-500">{stat.label}</span>
                 </div>
                 <div className="text-2xl font-bold">{stat.value}</div>
               </div>
@@ -274,7 +274,7 @@ export default function Profile() {
             <div className="glass-panel p-6 rounded-2xl border border-white/10">
               <div className="flex items-center gap-2 mb-5">
                 <AcademicCapIcon className="h-5 w-5 text-orange-400" />
-                <span className="text-sm font-semibold uppercase tracking-[0.15em] text-slate-400">Solved Progress</span>
+                <span className="text-sm font-semibold uppercase tracking-[0.15em] text-neutral-400">Solved Progress</span>
               </div>
 
               <div className="flex flex-col sm:flex-row items-center gap-6">
@@ -311,13 +311,13 @@ export default function Profile() {
 
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <div className="text-4xl font-bold">{animatedPercent}%</div>
-                    <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Complete</div>
+                    <div className="text-xs uppercase tracking-[0.2em] text-neutral-400">Complete</div>
                   </div>
                 </div>
 
                 <div className="w-full">
                   <div className="text-4xl font-bold mb-1">{animatedSolvedCount}</div>
-                  <div className="text-sm text-slate-500 mb-5">
+                  <div className="text-sm text-neutral-500 mb-5">
                     {totalProblems ? `${animatedSolvedCount} of ${totalProblems} questions solved` : "No problems created yet"}
                   </div>
 
@@ -331,7 +331,7 @@ export default function Profile() {
               </div>
 
               {solvedLoading && (
-                <p className="text-xs text-slate-500 mt-4">Refreshing solved stats...</p>
+                <p className="text-xs text-neutral-500 mt-4">Refreshing solved stats...</p>
               )}
               {solvedError && (
                 <p className="text-xs text-rose-300 mt-4">{solvedError}</p>
@@ -340,18 +340,18 @@ export default function Profile() {
 
             <div className="glass-panel p-6 rounded-2xl border border-white/10 relative">
               <div className="flex items-center justify-between mb-5">
-                <div className="text-sm font-semibold uppercase tracking-[0.15em] text-slate-400">Account Details</div>
+                <div className="text-sm font-semibold uppercase tracking-[0.15em] text-neutral-400">Account Details</div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setIsEditProfileOpen(true)}
-                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 transition-colors"
+                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-neutral-300 transition-colors"
                     title="Edit Profile"
                   >
                     <PencilSquareIcon className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => setIsResetPasswordOpen(true)}
-                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 transition-colors"
+                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-neutral-300 transition-colors"
                     title="Reset Password"
                   >
                     <KeyIcon className="h-4 w-4" />
@@ -359,16 +359,16 @@ export default function Profile() {
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-4">
-                <div className="rounded-xl bg-slate-950/60 border border-white/5 p-4">
-                  <div className="text-xs text-slate-500 mb-1">First Name</div>
+                <div className="rounded-xl bg-black/60 border border-white/5 p-4">
+                  <div className="text-xs text-neutral-500 mb-1">First Name</div>
                   <div className="text-lg font-semibold">{user?.firstname || "--"}</div>
                 </div>
-                <div className="rounded-xl bg-slate-950/60 border border-white/5 p-4">
-                  <div className="text-xs text-slate-500 mb-1">Last Name</div>
+                <div className="rounded-xl bg-black/60 border border-white/5 p-4">
+                  <div className="text-xs text-neutral-500 mb-1">Last Name</div>
                   <div className="text-lg font-semibold">{user?.lastname || "--"}</div>
                 </div>
-                <div className="rounded-xl bg-slate-950/60 border border-white/5 p-4">
-                  <div className="text-xs text-slate-500 mb-1">Email</div>
+                <div className="rounded-xl bg-black/60 border border-white/5 p-4">
+                  <div className="text-xs text-neutral-500 mb-1">Email</div>
                   <div className="text-lg font-semibold break-all">{user?.emailId || "--"}</div>
                 </div>
               </div>
@@ -377,10 +377,10 @@ export default function Profile() {
 
           <div className="glass-panel p-6 rounded-2xl border border-white/10 mt-6">
             <div className="flex items-center justify-between gap-3 mb-5">
-              <div className="text-sm font-semibold uppercase tracking-[0.15em] text-slate-400">
+              <div className="text-sm font-semibold uppercase tracking-[0.15em] text-neutral-400">
                 Last 5 Solved Questions
               </div>
-              <span className="text-xs text-slate-500">Updates every 15s</span>
+              <span className="text-xs text-neutral-500">Updates every 15s</span>
             </div>
 
             {recentSolved.length > 0 ? (
@@ -388,7 +388,7 @@ export default function Profile() {
                 {recentSolved.map((item, index) => (
                   <div
                     key={`${item.problemId}-${item.solvedAt}-${index}`}
-                    className="rounded-xl bg-slate-950/60 border border-white/5 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                    className="rounded-xl bg-black/60 border border-white/5 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <span className="h-7 w-7 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-semibold flex items-center justify-center shrink-0">
@@ -396,12 +396,12 @@ export default function Profile() {
                       </span>
                       <div className="min-w-0">
                         <div className="font-medium text-white truncate">{item.title}</div>
-                        <div className="text-xs text-slate-500">Solved</div>
+                        <div className="text-xs text-neutral-500">Solved</div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3 shrink-0">
-                      <div className="text-xs sm:text-sm text-slate-400">
+                      <div className="text-xs sm:text-sm text-neutral-400">
                         {item.solvedAt
                           ? new Date(item.solvedAt).toLocaleDateString("en-US", {
                             year: "numeric",
@@ -413,7 +413,7 @@ export default function Profile() {
                       {item.problemId && (
                         <Link
                           to={`/problem/${item.problemId}`}
-                          className="btn btn-xs bg-white/5 border-white/15 text-slate-300 hover:bg-white/10"
+                          className="btn btn-xs bg-white/5 border-white/15 text-neutral-300 hover:bg-white/10"
                         >
                           Open
                         </Link>
@@ -423,7 +423,7 @@ export default function Profile() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-xl bg-slate-950/60 border border-white/5 p-4 text-slate-400 text-sm">
+              <div className="rounded-xl bg-black/60 border border-white/5 p-4 text-neutral-400 text-sm">
                 No solved questions yet.
               </div>
             )}
@@ -433,11 +433,11 @@ export default function Profile() {
 
       {/* Edit Profile Modal */}
       {isEditProfileOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="glass-panel w-full max-w-md rounded-2xl border border-white/10 p-6 relative">
             <button
               onClick={() => setIsEditProfileOpen(false)}
-              className="absolute top-4 right-4 p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+              className="absolute top-4 right-4 p-1 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
             >
               <XMarkIcon className="h-5 w-5" />
             </button>
@@ -456,32 +456,32 @@ export default function Profile() {
 
             <form onSubmit={handleEditProfile} className="space-y-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">First Name</label>
+                <label className="block text-xs text-neutral-400 mb-1">First Name</label>
                 <input
                   type="text"
                   required
                   value={editFormData.firstname}
                   onChange={(e) => setEditFormData({ ...editFormData, firstname: e.target.value })}
-                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-orange-500/50"
+                  className="w-full bg-neutral-900/50 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-orange-500/50"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Last Name</label>
+                <label className="block text-xs text-neutral-400 mb-1">Last Name</label>
                 <input
                   type="text"
                   required
                   value={editFormData.lastname}
                   onChange={(e) => setEditFormData({ ...editFormData, lastname: e.target.value })}
-                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-orange-500/50"
+                  className="w-full bg-neutral-900/50 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-orange-500/50"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Email <span className="text-slate-500">(Cannot be changed)</span></label>
+                <label className="block text-xs text-neutral-400 mb-1">Email <span className="text-neutral-500">(Cannot be changed)</span></label>
                 <input
                   type="email"
                   disabled
                   value={user?.emailId || ""}
-                  className="w-full bg-slate-950/50 border border-white/5 rounded-xl px-4 py-2 text-sm text-slate-500 cursor-not-allowed"
+                  className="w-full bg-black/50 border border-white/5 rounded-xl px-4 py-2 text-sm text-neutral-500 cursor-not-allowed"
                 />
               </div>
 
@@ -508,11 +508,11 @@ export default function Profile() {
 
       {/* Reset Password Modal */}
       {isResetPasswordOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="glass-panel w-full max-w-md rounded-2xl border border-white/10 p-6 relative">
             <button
               onClick={() => setIsResetPasswordOpen(false)}
-              className="absolute top-4 right-4 p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+              className="absolute top-4 right-4 p-1 rounded-lg text-neutral-400 hover:text-white hover:bg-white/10 transition-colors"
             >
               <XMarkIcon className="h-5 w-5" />
             </button>
@@ -531,35 +531,35 @@ export default function Profile() {
 
             <form onSubmit={handleResetPassword} className="space-y-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Current Password</label>
+                <label className="block text-xs text-neutral-400 mb-1">Current Password</label>
                 <input
                   type="password"
                   required
                   value={passFormData.oldPassword}
                   onChange={(e) => setPassFormData({ ...passFormData, oldPassword: e.target.value })}
-                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-orange-500/50"
+                  className="w-full bg-neutral-900/50 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-orange-500/50"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">New Password</label>
+                <label className="block text-xs text-neutral-400 mb-1">New Password</label>
                 <input
                   type="password"
                   required
                   minLength={8}
                   value={passFormData.newPassword}
                   onChange={(e) => setPassFormData({ ...passFormData, newPassword: e.target.value })}
-                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-orange-500/50"
+                  className="w-full bg-neutral-900/50 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-orange-500/50"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Confirm New Password</label>
+                <label className="block text-xs text-neutral-400 mb-1">Confirm New Password</label>
                 <input
                   type="password"
                   required
                   minLength={8}
                   value={passFormData.confirmPassword}
                   onChange={(e) => setPassFormData({ ...passFormData, confirmPassword: e.target.value })}
-                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-orange-500/50"
+                  className="w-full bg-neutral-900/50 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-orange-500/50"
                 />
               </div>
 

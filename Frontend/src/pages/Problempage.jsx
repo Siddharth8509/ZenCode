@@ -172,7 +172,7 @@ export default function Problempage() {
             <div className="h-screen w-full overflow-hidden">
 
                 {/*IDE Navbar*/}
-                <div className="flex h-16 glass items-center justify-between px-4 border-b border-white/10 relative z-20">
+                <div className="flex h-16 bg-black/95 backdrop-blur-md items-center justify-between px-4 border-b border-neutral-900 relative z-20">
                     {/* Left: Navigation */}
                     <div className="flex gap-4 items-center">
                         <div className="flex items-center gap-2">
@@ -180,7 +180,7 @@ export default function Problempage() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <button onClick={() => navigate('/problemset')} className="btn btn-sm btn-ghost text-slate-300 hover:text-white flex items-center gap-2 hover:bg-white/5">
+                            <button onClick={() => navigate('/problemset')} className="btn btn-sm btn-ghost text-neutral-300 hover:text-white flex items-center gap-2 hover:bg-white/5">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3" />
                                 </svg>
@@ -189,7 +189,7 @@ export default function Problempage() {
 
                             <div className="join">
                                 <button
-                                    className="btn btn-sm btn-ghost join-item text-slate-400 hover:bg-white/5 disabled:opacity-40"
+                                    className="btn btn-sm btn-ghost join-item text-neutral-400 hover:bg-white/5 disabled:opacity-40"
                                     onClick={handlePreviousProblem}
                                     disabled={!hasPreviousProblem}
                                     title="Previous problem"
@@ -199,7 +199,7 @@ export default function Problempage() {
                                     </svg>
                                 </button>
                                 <button
-                                    className="btn btn-sm btn-ghost join-item text-slate-400 hover:bg-white/5 disabled:opacity-40"
+                                    className="btn btn-sm btn-ghost join-item text-neutral-400 hover:bg-white/5 disabled:opacity-40"
                                     onClick={handleNextProblem}
                                     disabled={!hasNextProblem}
                                     title="Next problem"
@@ -215,7 +215,7 @@ export default function Problempage() {
                     {/* Middle: Actions */}
                     <div className="flex gap-3">
                         <button
-                            className={`btn btn-sm bg-slate-900 hover:bg-slate-800 text-white border-none gap-2 transition-all duration-300 ${isRunning ? "opacity-70 cursor-not-allowed" : "hover:scale-[1.02] active:scale-[0.97]"}`}
+                            className={`btn btn-sm bg-neutral-900 hover:bg-neutral-800 text-white border-none gap-2 transition-all duration-300 ${isRunning ? "opacity-70 cursor-not-allowed" : "hover:scale-[1.02] active:scale-[0.97]"}`}
                             onClick={handleRun}
                             disabled={isRunning}
                         >
@@ -238,18 +238,14 @@ export default function Problempage() {
                     </div>
 
                     {/* Right: Timer */}
-                    <div className="text-slate-300 font-mono px-3 py-1 rounded">
+                    <div className="text-neutral-300 font-mono px-3 py-1 rounded">
                         <Timer></Timer>
                     </div>
                 </div>
 
 
-                <div className="bg-slate-950 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black h-[calc(100vh-64px)] w-full overflow-hidden relative">
-                    {/* Ambient Glow */}
-                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-                        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-orange-400/40 rounded-full blur-[100px]"></div>
-                        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-red-400/40 rounded-full blur-[100px]"></div>
-                    </div>
+                <div className="bg-black h-[calc(100vh-64px)] w-full overflow-hidden relative">
+                    {/* Ambient Glow removed for clean black theme */}
 
                     <Group orientation="horizontal" className="z-10 relative p-1 h-full w-full min-h-0 min-w-0">
 
@@ -284,7 +280,7 @@ export default function Problempage() {
 
             {submissionPopup && (
                 <div className="fixed left-4 top-20 z-50 w-[min(380px,calc(100vw-2rem))] animate-slide-in-left">
-                    <div className="relative rounded-2xl border border-white/10 bg-slate-900/90 p-5 shadow-2xl">
+                    <div className="relative rounded-2xl border border-white/10 bg-neutral-900/90 p-5 shadow-2xl">
                         <div className="flex items-start justify-between gap-4">
                             <div className="flex items-center gap-3">
                                 <div
@@ -304,7 +300,7 @@ export default function Problempage() {
                                     </span>
                                 </div>
                                 <div>
-                                    <div className="text-xs uppercase tracking-[0.25em] text-slate-500">
+                                    <div className="text-xs uppercase tracking-[0.25em] text-neutral-500">
                                         Submission Result
                                     </div>
                                     <div className="text-xl font-semibold text-white">
@@ -315,7 +311,7 @@ export default function Problempage() {
                                 </div>
                             </div>
                             <button
-                                className="btn btn-sm btn-ghost text-slate-400"
+                                className="btn btn-sm btn-ghost text-neutral-400"
                                 onClick={() => setSubmissionPopup(null)}
                             >
                                 Close
@@ -323,12 +319,12 @@ export default function Problempage() {
                         </div>
 
                         <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                            <div className="rounded-xl border border-white/10 bg-slate-900/60 p-3">
-                                <div className="text-xs text-slate-500 uppercase">Language</div>
+                            <div className="rounded-xl border border-white/10 bg-neutral-900/60 p-3">
+                                <div className="text-xs text-neutral-500 uppercase">Language</div>
                                 <div className="font-mono text-white">{submissionPopup.language}</div>
                             </div>
-                            <div className="rounded-xl border border-white/10 bg-slate-900/60 p-3">
-                                <div className="text-xs text-slate-500 uppercase">Time</div>
+                            <div className="rounded-xl border border-white/10 bg-neutral-900/60 p-3">
+                                <div className="text-xs text-neutral-500 uppercase">Time</div>
                                 <div className="text-white">
                                     {new Date(submissionPopup.timestamp).toLocaleTimeString()}
                                 </div>
@@ -350,23 +346,23 @@ export default function Problempage() {
                         {(submissionPopup.testCasesPassed != null || submissionPopup.runtime != null || submissionPopup.memory != null) && (
                             <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                                 {submissionPopup.testCasesPassed != null && (
-                                    <div className="rounded-xl border border-white/10 bg-slate-900/60 p-3 col-span-2">
-                                        <div className="text-xs text-slate-500 uppercase">Test Cases</div>
+                                    <div className="rounded-xl border border-white/10 bg-neutral-900/60 p-3 col-span-2">
+                                        <div className="text-xs text-neutral-500 uppercase">Test Cases</div>
                                         <div className="font-mono text-white">{submissionPopup.testCasesPassed} / {submissionPopup.testCasesTotal}</div>
                                     </div>
                                 )}
-                                <div className="rounded-xl border border-white/10 bg-slate-900/60 p-3">
-                                    <div className="text-xs text-slate-500 uppercase">Runtime</div>
+                                <div className="rounded-xl border border-white/10 bg-neutral-900/60 p-3">
+                                    <div className="text-xs text-neutral-500 uppercase">Runtime</div>
                                     <div className="text-white">{submissionPopup.runtime ?? "-"} ms</div>
                                 </div>
-                                <div className="rounded-xl border border-white/10 bg-slate-900/60 p-3">
-                                    <div className="text-xs text-slate-500 uppercase">Memory</div>
+                                <div className="rounded-xl border border-white/10 bg-neutral-900/60 p-3">
+                                    <div className="text-xs text-neutral-500 uppercase">Memory</div>
                                     <div className="text-white">{submissionPopup.memory ?? "-"} KB</div>
                                 </div>
                             </div>
                         )}
 
-                        <div className="mt-4 text-xs text-slate-500">
+                        <div className="mt-4 text-xs text-neutral-500">
                             Saved to your submissions history.
                         </div>
                     </div>

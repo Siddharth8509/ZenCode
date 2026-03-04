@@ -72,21 +72,21 @@ export default function LeftPanel({ prop }) {
             case "hard":
                 return { text: "text-rose-300", badge: "bg-rose-500/10 border-rose-500/20" };
             default:
-                return { text: "text-slate-300", badge: "bg-slate-700/50 border-slate-600" };
+                return { text: "text-neutral-300", badge: "bg-neutral-700/50 border-neutral-600" };
         }
     };
     const diffColors = getDifficultyColor(prop?.difficulty);
 
     return (
-        <div className="h-full w-full flex flex-col bg-gradient-to-br from-slate-950 via-slate-900/95 to-slate-950 backdrop-blur-sm overflow-hidden">
-            <div className="flex items-center h-12 px-6 border-b border-white/5 gap-1 bg-slate-950/80 shrink-0">
+        <div className="h-full w-full flex flex-col bg-black overflow-hidden">
+            <div className="flex items-center h-12 px-6 border-b border-white/5 gap-1 bg-black/80 shrink-0">
                 {TABS.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`h-full px-5 text-sm font-semibold border-b-2 transition-all ${activeTab === tab.id
                             ? "text-orange-300 border-orange-400 bg-orange-500/10"
-                            : "text-slate-400 border-transparent hover:text-slate-200"
+                            : "text-neutral-400 border-transparent hover:text-neutral-200"
                             }`}
                     >
                         {tab.label}
@@ -110,9 +110,9 @@ export default function LeftPanel({ prop }) {
                             {companies.map((company, idx) => (
                                 <span
                                     key={idx}
-                                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/70 border border-white/10 text-xs font-medium text-slate-300"
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-900/70 border border-white/10 text-xs font-medium text-neutral-300"
                                 >
-                                    <BriefcaseIcon className="h-3.5 w-3.5 text-slate-400" />
+                                    <BriefcaseIcon className="h-3.5 w-3.5 text-neutral-400" />
                                     {company}
                                 </span>
                             ))}
@@ -128,7 +128,7 @@ export default function LeftPanel({ prop }) {
                         </div>
 
                         <div className="space-y-2">
-                            <div className="prose prose-invert prose-sm max-w-none text-slate-300 leading-relaxed">
+                            <div className="prose prose-invert prose-sm max-w-none text-neutral-300 leading-relaxed">
                                 <Markdown>{prop?.description || "No description available."}</Markdown>
                             </div>
                         </div>
@@ -139,24 +139,24 @@ export default function LeftPanel({ prop }) {
                                 {examples.map((ex, idx) => (
                                     <div
                                         key={idx}
-                                        className="rounded-2xl bg-slate-900/80 border border-white/10 overflow-hidden"
+                                        className="rounded-2xl bg-neutral-900/80 border border-white/10 overflow-hidden"
                                     >
-                                        <div className="px-4 py-2 flex items-center gap-2 bg-slate-900/80 border-b border-white/10">
+                                        <div className="px-4 py-2 flex items-center gap-2 bg-neutral-900/80 border-b border-white/10">
                                             <span className="text-sm font-semibold text-white">
                                                 Example {idx + 1}
                                             </span>
                                         </div>
                                         <div className="p-4 space-y-3 text-sm font-mono">
                                             <div className="flex gap-3">
-                                                <span className="text-slate-500 w-14 shrink-0">Input</span>
-                                                <span className="text-slate-200">{ex.input}</span>
+                                                <span className="text-neutral-500 w-14 shrink-0">Input</span>
+                                                <span className="text-neutral-200">{ex.input}</span>
                                             </div>
                                             <div className="flex gap-3">
-                                                <span className="text-slate-500 w-14 shrink-0">Output</span>
+                                                <span className="text-neutral-500 w-14 shrink-0">Output</span>
                                                 <span className="text-emerald-300">{ex.output}</span>
                                             </div>
                                             {ex.explanation && (
-                                                <div className="text-slate-400 text-xs pl-[58px] border-t border-white/5 pt-3 mt-2">
+                                                <div className="text-neutral-400 text-xs pl-[58px] border-t border-white/5 pt-3 mt-2">
                                                     {ex.explanation}
                                                 </div>
                                             )}
@@ -167,12 +167,12 @@ export default function LeftPanel({ prop }) {
                         )}
 
                         {prop?.constraints && (
-                            <div className="space-y-2 rounded-2xl bg-slate-900/80 border border-white/10 p-4">
+                            <div className="space-y-2 rounded-2xl bg-neutral-900/80 border border-white/10 p-4">
                                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                                    <CpuChipIcon className="h-4 w-4 text-slate-400" />
+                                    <CpuChipIcon className="h-4 w-4 text-neutral-400" />
                                     Constraints
                                 </h3>
-                                <ul className="text-sm text-slate-400 space-y-1 list-disc list-inside">
+                                <ul className="text-sm text-neutral-400 space-y-1 list-disc list-inside">
                                     <li>{prop.constraints}</li>
                                 </ul>
                             </div>
@@ -184,13 +184,13 @@ export default function LeftPanel({ prop }) {
                                 {hints.map((hint, idx) => (
                                     <div
                                         key={idx}
-                                        className="rounded-xl bg-slate-900/80 border border-white/10 overflow-hidden"
+                                        className="rounded-xl bg-neutral-900/80 border border-white/10 overflow-hidden"
                                     >
                                         <button
                                             onClick={() =>
                                                 setExpandedHint(expandedHint === idx ? null : idx)
                                             }
-                                            className="w-full px-4 py-3 flex items-center justify-between text-sm font-medium text-slate-200 hover:bg-slate-950 transition-colors"
+                                            className="w-full px-4 py-3 flex items-center justify-between text-sm font-medium text-neutral-200 hover:bg-black transition-colors"
                                         >
                                             <span>Hint {idx + 1}</span>
                                             <ChevronDownIcon
@@ -199,7 +199,7 @@ export default function LeftPanel({ prop }) {
                                             />
                                         </button>
                                         <div
-                                            className={`px-4 pb-4 text-sm text-slate-400 overflow-hidden transition-all duration-200 ${expandedHint === idx ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+                                            className={`px-4 pb-4 text-sm text-neutral-400 overflow-hidden transition-all duration-200 ${expandedHint === idx ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
                                                 }`}
                                         >
                                             {hint}
@@ -216,7 +216,7 @@ export default function LeftPanel({ prop }) {
                         <h3 className="text-lg font-semibold text-white">Your Submissions</h3>
 
                         {loadingSubmissions && (
-                            <div className="text-slate-400 text-sm flex items-center gap-2">
+                            <div className="text-neutral-400 text-sm flex items-center gap-2">
                                 <div className="loader h-4 w-4 border-2 border-orange-400 border-t-transparent rounded-full animate-spin"></div>
                                 Loading submissions...
                             </div>
@@ -230,7 +230,7 @@ export default function LeftPanel({ prop }) {
                         )}
 
                         {!loadingSubmissions && !submissionError && submissions.length === 0 && (
-                            <div className="text-slate-500 text-sm">No submissions yet.</div>
+                            <div className="text-neutral-500 text-sm">No submissions yet.</div>
                         )}
 
                         {submissions.length > 0 && (
@@ -249,7 +249,7 @@ export default function LeftPanel({ prop }) {
                                                     <XCircleIcon className="h-3 w-3 text-white" />
                                                 )}
                                             </div>
-                                            <div className="rounded-xl bg-slate-900/80 border border-white/10 p-4 hover:border-orange-500/40 transition-colors">
+                                            <div className="rounded-xl bg-neutral-900/80 border border-white/10 p-4 hover:border-orange-500/40 transition-colors">
                                                 <div className="flex items-center justify-between mb-2">
                                                     <span
                                                         className={`text-sm font-semibold ${isAccepted ? "text-emerald-300" : "text-rose-300"
@@ -257,14 +257,14 @@ export default function LeftPanel({ prop }) {
                                                     >
                                                         {sub.status || "Unknown"}
                                                     </span>
-                                                    <span className="text-xs text-slate-500 flex items-center gap-1">
+                                                    <span className="text-xs text-neutral-500 flex items-center gap-1">
                                                         <ClockIcon className="h-3 w-3" />
                                                         {sub.createdAt
                                                             ? new Date(sub.createdAt).toLocaleString()
                                                             : "—"}
                                                     </span>
                                                 </div>
-                                                <div className="text-xs text-slate-400 flex items-center gap-4">
+                                                <div className="text-xs text-neutral-400 flex items-center gap-4">
                                                     <span>Language: {sub.language || "—"}</span>
                                                     {sub.runtime != null && <span>Runtime: {sub.runtime} ms</span>}
                                                     {sub.memory != null && <span>Memory: {sub.memory} KB</span>}
@@ -286,7 +286,7 @@ export default function LeftPanel({ prop }) {
                         </div>
 
                         {prop?.editorial ? (
-                            <div className="rounded-2xl bg-slate-900/80 border border-white/10 overflow-hidden p-6 editorial-markdown" data-color-mode="dark">
+                            <div className="rounded-2xl bg-neutral-900/80 border border-white/10 overflow-hidden p-6 editorial-markdown" data-color-mode="dark">
                                 <style>{`
                                     .editorial-markdown a.anchor {
                                         display: none !important;
@@ -307,10 +307,10 @@ export default function LeftPanel({ prop }) {
                                 />
                             </div>
                         ) : (
-                            <div className="rounded-2xl bg-slate-900/80 border border-white/10 p-8 text-center">
-                                <BookOpenIcon className="h-10 w-10 text-slate-600 mx-auto mb-3" />
-                                <p className="text-slate-500 text-sm font-medium">No editorial found</p>
-                                <p className="text-slate-600 text-xs mt-1">An editorial hasn't been added for this problem yet.</p>
+                            <div className="rounded-2xl bg-neutral-900/80 border border-white/10 p-8 text-center">
+                                <BookOpenIcon className="h-10 w-10 text-neutral-600 mx-auto mb-3" />
+                                <p className="text-neutral-500 text-sm font-medium">No editorial found</p>
+                                <p className="text-neutral-600 text-xs mt-1">An editorial hasn't been added for this problem yet.</p>
                             </div>
                         )}
                     </div>

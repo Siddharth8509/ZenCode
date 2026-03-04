@@ -21,7 +21,7 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center">
+      <div className="min-h-screen bg-black text-neutral-300 flex items-center justify-center">
         <div className="glass-panel px-6 py-4 rounded-2xl border border-white/10">Checking session...</div>
       </div>
     );

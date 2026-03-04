@@ -25,9 +25,9 @@ export default function UpperRightPanle({ prop, code, setCode, language, setLang
       {/* Toolbar */}
       <div className="h-10 bg-transparent flex items-center justify-between px-3 border-b border-white/5 backdrop-blur-sm">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Language:</span>
+          <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Language:</span>
           <select
-            className="select select-sm select-ghost w-32 text-slate-300 focus:bg-slate-800 focus:text-white"
+            className="select select-sm select-ghost w-32 text-neutral-300 focus:bg-neutral-800 focus:text-white"
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
           >
@@ -38,7 +38,7 @@ export default function UpperRightPanle({ prop, code, setCode, language, setLang
           </select>
         </div>
 
-        <div className="text-xs text-slate-500 flex items-center gap-1">
+        <div className="text-xs text-neutral-500 flex items-center gap-1">
           <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]"></div>
           Auto-saved
         </div>

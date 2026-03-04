@@ -115,7 +115,7 @@ export default function Adminpage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white selection:bg-orange-500/20 pb-24">
+    <div className="min-h-screen bg-black text-white selection:bg-orange-500/20 pb-24">
       <Navbar />
 
       {/* Background */}
@@ -128,7 +128,7 @@ export default function Adminpage() {
         <h1 className="text-4xl font-semibold text-center mb-4 bg-gradient-to-r from-orange-500 via-red-500 to-amber-500 bg-clip-text text-transparent">
           Admin Panel
         </h1>
-        <p className="text-center text-slate-400 mb-10">Create and manage problems for ZenCode.</p>
+        <p className="text-center text-neutral-400 mb-10">Create and manage problems for ZenCode.</p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto">
 
@@ -137,40 +137,40 @@ export default function Adminpage() {
             <h2 className="text-lg font-semibold border-l-4 border-orange-500 pl-4">Basic Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Title</label>
+                <label className="text-xs uppercase tracking-[0.2em] text-neutral-500">Title</label>
                 <input
                   {...register("title")}
-                  className="mt-2 w-full bg-slate-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  className="mt-2 w-full bg-neutral-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
                   placeholder="Problem Title"
                 />
                 <p className="text-red-400 text-xs mt-1">{errors.title?.message}</p>
               </div>
               <div>
-                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Companies (comma separated)</label>
+                <label className="text-xs uppercase tracking-[0.2em] text-neutral-500">Companies (comma separated)</label>
                 <input
                   {...register("companies")}
-                  className="mt-2 w-full bg-slate-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  className="mt-2 w-full bg-neutral-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
                   placeholder="Google, Amazon"
                 />
                 <p className="text-red-400 text-xs mt-1">{errors.companies?.message}</p>
               </div>
             </div>
             <div>
-              <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Description</label>
+              <label className="text-xs uppercase tracking-[0.2em] text-neutral-500">Description</label>
               <textarea
                 {...register("description")}
                 rows={4}
-                className="mt-2 w-full bg-slate-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                className="mt-2 w-full bg-neutral-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
                 placeholder="Problem description (supports markdown)"
               />
               <p className="text-red-400 text-xs mt-1">{errors.description?.message}</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Difficulty</label>
+                <label className="text-xs uppercase tracking-[0.2em] text-neutral-500">Difficulty</label>
                 <select
                   {...register("difficulty")}
-                  className="mt-2 w-full bg-slate-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  className="mt-2 w-full bg-neutral-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
                 >
                   <option value="easy">Easy</option>
                   <option value="medium">Medium</option>
@@ -178,10 +178,10 @@ export default function Adminpage() {
                 </select>
               </div>
               <div>
-                <label className="text-xs uppercase tracking-[0.2em] text-slate-500">Constraints</label>
+                <label className="text-xs uppercase tracking-[0.2em] text-neutral-500">Constraints</label>
                 <input
                   {...register("constraints")}
-                  className="mt-2 w-full bg-slate-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  className="mt-2 w-full bg-neutral-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
                   placeholder="e.g. 1 ≤ n ≤ 10^5"
                 />
                 <p className="text-red-400 text-xs mt-1">{errors.constraints?.message}</p>
@@ -196,13 +196,13 @@ export default function Adminpage() {
               {TAG_OPTIONS.map((tag) => (
                 <label
                   key={tag}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900/70 border border-white/10 cursor-pointer hover:border-orange-400/50 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-900/70 border border-white/10 cursor-pointer hover:border-orange-400/50 transition-colors"
                 >
                   <input
                     type="checkbox"
                     {...register("tags")}
                     value={tag}
-                    className="h-4 w-4 rounded border-white/20 bg-slate-900 text-orange-400 focus:ring-orange-400"
+                    className="h-4 w-4 rounded border-white/20 bg-neutral-900 text-orange-400 focus:ring-orange-400"
                   />
                   <span className="text-sm">{tag}</span>
                 </label>
@@ -218,7 +218,7 @@ export default function Adminpage() {
               <div key={field.id} className="flex gap-4 items-center">
                 <input
                   {...register(`hints.${index}`)}
-                  className="flex-1 bg-slate-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  className="flex-1 bg-neutral-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
                   placeholder={`Hint ${index + 1}`}
                 />
                 <button
@@ -243,9 +243,9 @@ export default function Adminpage() {
           <section className="glass-panel p-6 rounded-2xl border border-white/10 space-y-4">
             <h2 className="text-lg font-semibold border-l-4 border-emerald-500 pl-4">Examples</h2>
             {exampleFields.map((field, index) => (
-              <div key={field.id} className="p-4 rounded-xl bg-slate-900/70 border border-white/10 space-y-3">
+              <div key={field.id} className="p-4 rounded-xl bg-neutral-900/70 border border-white/10 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-400">Example {index + 1}</span>
+                  <span className="text-sm text-neutral-400">Example {index + 1}</span>
                   <button
                     type="button"
                     onClick={() => removeExample(index)}
@@ -256,17 +256,17 @@ export default function Adminpage() {
                 </div>
                 <input
                   {...register(`examples.${index}.input`)}
-                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  className="w-full bg-neutral-900/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
                   placeholder="Input"
                 />
                 <input
                   {...register(`examples.${index}.output`)}
-                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  className="w-full bg-neutral-900/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
                   placeholder="Output"
                 />
                 <input
                   {...register(`examples.${index}.explanation`)}
-                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  className="w-full bg-neutral-900/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
                   placeholder="Explanation (optional)"
                 />
               </div>
@@ -285,9 +285,9 @@ export default function Adminpage() {
           <section className="glass-panel p-6 rounded-2xl border border-white/10 space-y-4">
             <h2 className="text-lg font-semibold border-l-4 border-rose-500 pl-4">Test Cases</h2>
             {testCaseFields.map((field, index) => (
-              <div key={field.id} className="p-4 rounded-xl bg-slate-900/70 border border-white/10 space-y-3">
+              <div key={field.id} className="p-4 rounded-xl bg-neutral-900/70 border border-white/10 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-400">Test Case {index + 1}</span>
+                  <span className="text-sm text-neutral-400">Test Case {index + 1}</span>
                   <button
                     type="button"
                     onClick={() => removeTestCase(index)}
@@ -298,12 +298,12 @@ export default function Adminpage() {
                 </div>
                 <input
                   {...register(`testCases.${index}.input`)}
-                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  className="w-full bg-neutral-900/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
                   placeholder="Input"
                 />
                 <input
                   {...register(`testCases.${index}.expectedOutput`)}
-                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  className="w-full bg-neutral-900/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
                   placeholder="Expected Output"
                 />
               </div>
@@ -322,9 +322,9 @@ export default function Adminpage() {
           <section className="glass-panel p-6 rounded-2xl border border-white/10 space-y-4">
             <h2 className="text-lg font-semibold border-l-4 border-orange-500 pl-4">Initial Code Templates</h2>
             {codeFields.map((field, index) => (
-              <div key={field.id} className="p-4 rounded-xl bg-slate-900/70 border border-white/10 space-y-3">
+              <div key={field.id} className="p-4 rounded-xl bg-neutral-900/70 border border-white/10 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-400">Language {index + 1}</span>
+                  <span className="text-sm text-neutral-400">Language {index + 1}</span>
                   <button
                     type="button"
                     onClick={() => removeCode(index)}
@@ -335,7 +335,7 @@ export default function Adminpage() {
                 </div>
                 <select
                   {...register(`initialCode.${index}.language`)}
-                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  className="w-full bg-neutral-900/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
                 >
                   <option value="cpp">C++</option>
                   <option value="java">Java</option>
@@ -345,7 +345,7 @@ export default function Adminpage() {
                 <textarea
                   {...register(`initialCode.${index}.code`)}
                   rows={4}
-                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-white font-mono text-sm focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  className="w-full bg-neutral-900/50 border border-white/10 rounded-xl px-4 py-2 text-white font-mono text-sm focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
                   placeholder="Starter code..."
                 />
               </div>

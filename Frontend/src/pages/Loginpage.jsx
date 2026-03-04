@@ -75,7 +75,7 @@ export default function Loginpage() {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white selection:bg-orange-500/20">
+    <div className="min-h-screen bg-black text-white selection:bg-orange-500/20">
       {toast && (
         <div className="fixed top-6 right-6 z-50 animate-pop-in">
           <div
@@ -87,26 +87,26 @@ export default function Loginpage() {
             <div className="font-semibold">
               {toast.type === "success" ? "Success" : "Error"}
             </div>
-            <div className="text-xs text-slate-300 mt-1">{toast.message}</div>
+            <div className="text-xs text-neutral-300 mt-1">{toast.message}</div>
           </div>
         </div>
       )}
       <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="relative hidden lg:flex items-center justify-center p-12 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
+          <div className="absolute inset-0 bg-gradient-to-br from-black via-neutral-900 to-black" />
           <div className="absolute -top-24 left-[-20%] w-[60%] h-[60%] bg-orange-500/10 blur-[160px] rounded-full" />
           <div className="absolute bottom-[-30%] right-[-10%] w-[60%] h-[60%] bg-rose-500/10 blur-[160px] rounded-full" />
           <div className="relative z-10 max-w-md space-y-6">
-            <div className="text-sm uppercase tracking-[0.4em] text-slate-400">ZenCode</div>
+            <div className="text-sm uppercase tracking-[0.4em] text-neutral-400">ZenCode</div>
             <h1 className="text-4xl font-semibold leading-tight">
               Practice with purpose. Build interview-ready skills.
             </h1>
-            <p className="text-slate-400">
+            <p className="text-neutral-400">
               Daily prompts, company tracks, and structured DSA learning in one place.
             </p>
             <div className="grid grid-cols-2 gap-4 text-sm">
               {["Guided paths", "Timed mocks", "Progress tracking", "Community insights"].map((item) => (
-                <div key={item} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-300">
+                <div key={item} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-neutral-300">
                   {item}
                 </div>
               ))}
@@ -118,25 +118,25 @@ export default function Loginpage() {
           <div className="w-full max-w-md">
             <div className="mb-8">
               <h2 className="text-3xl font-semibold">Sign in</h2>
-              <p className="text-slate-400 text-sm mt-2">Welcome back. Continue your learning streak.</p>
+              <p className="text-neutral-400 text-sm mt-2">Welcome back. Continue your learning streak.</p>
             </div>
 
             <div className="space-y-4">
               <button
                 type="button"
-                className="w-full rounded-xl border border-white/10 bg-white/5 py-3 text-sm font-semibold hover:bg-white/10 transition-colors text-slate-300"
+                className="w-full rounded-xl border border-white/10 bg-white/5 py-3 text-sm font-semibold hover:bg-white/10 transition-colors text-neutral-300"
               >
                 Continue with Google
               </button>
               <button
                 type="button"
-                className="w-full rounded-xl border border-white/10 bg-white/5 py-3 text-sm font-semibold hover:bg-white/10 transition-colors text-slate-300"
+                className="w-full rounded-xl border border-white/10 bg-white/5 py-3 text-sm font-semibold hover:bg-white/10 transition-colors text-neutral-300"
               >
                 Continue with GitHub
               </button>
             </div>
 
-            <div className="my-6 flex items-center gap-4 text-xs text-slate-500">
+            <div className="my-6 flex items-center gap-4 text-xs text-neutral-500">
               <div className="h-px flex-1 bg-white/10" />
               OR
               <div className="h-px flex-1 bg-white/10" />
@@ -144,29 +144,29 @@ export default function Loginpage() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2 block">Email</label>
+                <label className="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-2 block">Email</label>
                 <input
                   {...register("emailId")}
                   placeholder="you@example.com"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all placeholder:text-slate-400"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all placeholder:text-neutral-400"
                 />
                 <p className="text-red-400 text-xs mt-1">{errors.emailId?.message}</p>
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2 block">Password</label>
+                <label className="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-2 block">Password</label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
                     {...register("password")}
                     placeholder="Enter your password"
                     autoComplete="current-password"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all placeholder:text-slate-400 pr-10"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all placeholder:text-neutral-400 pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors"
+                    className="absolute right-3 top-1/2 -tranneutral-y-1/2 text-neutral-400 hover:text-neutral-300 transition-colors"
                   >
                     {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                   </button>
@@ -175,7 +175,7 @@ export default function Loginpage() {
               </div>
 
               <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center gap-2 text-slate-500">
+                <label className="flex items-center gap-2 text-neutral-500">
                   <input type="checkbox" className="h-4 w-4 rounded border-white/20 bg-white/5 text-orange-400 focus:ring-orange-400" />
                   Remember me
                 </label>
@@ -195,7 +195,7 @@ export default function Loginpage() {
                 {loading ? "Signing in..." : "Log In"}
               </button>
 
-              <p className="text-center text-sm text-slate-400">
+              <p className="text-center text-sm text-neutral-400">
                 Don&apos;t have an account?
                 <span className="ml-2 text-orange-400 hover:text-orange-300 font-semibold cursor-pointer" onClick={() => navigate("/signup")}>
                   Sign Up
