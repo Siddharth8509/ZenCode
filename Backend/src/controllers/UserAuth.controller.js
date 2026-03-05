@@ -29,7 +29,12 @@ const registerUser = async (req, res) => {
             role: userData.role
         }
 
-        res.cookie("token", token, { maxAge: 60 * 60 * 1000, httpOnly: true });
+        res.cookie("token", token, {
+            maxAge: 60 * 60 * 1000,
+            httpOnly: true,
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            secure: process.env.NODE_ENV === "production",
+        });
         res.status(201).json({
             user: reply,
             message: "User registered successfully"
@@ -68,7 +73,12 @@ const loginUser = async (req, res) => {
             role: userData.role
         }
 
-        res.cookie("token", token, { maxAge: 60 * 60 * 1000, httpOnly: true });
+        res.cookie("token", token, {
+            maxAge: 60 * 60 * 1000,
+            httpOnly: true,
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            secure: process.env.NODE_ENV === "production",
+        });
         res.status(202).json({
             user: reply,
             message: "User registered successfully"
@@ -95,7 +105,11 @@ const logoutUser = async (req, res) => {
         console.error("Logout warning:", error.message);
     }
     finally {
-        res.clearCookie("token", { httpOnly: true });
+        res.clearCookie("token", {
+            httpOnly: true,
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            secure: process.env.NODE_ENV === "production",
+        });
         res.status(200).send("Logout successfully");
     }
 }
@@ -112,7 +126,12 @@ const adminRegister = async (req, res) => {
 
         const token = jwt.sign({ _id: newUser._id, emailId: emailId, role: newUser.role }, process.env.JWT_SECRET, { expiresIn: 60 * 60 });
 
-        res.cookie("token", token, { maxAge: 60 * 60 * 1000, httpOnly: true });
+        res.cookie("token", token, {
+            maxAge: 60 * 60 * 1000,
+            httpOnly: true,
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            secure: process.env.NODE_ENV === "production",
+        });
         res.status(201).send("User created successfully!");
     }
     catch (error) {
