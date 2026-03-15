@@ -597,8 +597,6 @@ The codebase intentionally keeps most styling next to the JSX via Tailwind utili
 ### Frontend Environment Expectations
 
 - `VITE_API_BASE_URL` -> backend base URL
-- `VITE_GEMINI_API_KEY` -> Gemini API key for the assistant
-- `VITE_GEMINI_MODEL` -> optional model override
 
 ## Current Gaps And Quirks Worth Knowing
 These are not guesses. They come directly from the current source code.
