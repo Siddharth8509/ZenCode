@@ -217,13 +217,11 @@ Why the reference-solution validation exists:
 ### AI Assistant Workflow
 
 1. On the problem page, the user opens the `AI Assistant` tab.
-2. `Frontend/src/components/Chatbot.jsx` initializes a Gemini chat session.
-3. The system prompt includes:
-   - the "DSA only" rule set
-   - Socratic teaching behavior
-   - the current problem title and description
-4. Each user message is also bundled with the latest editor code when available.
-5. The response is shown in the chat UI using Markdown rendering.
+2. `Frontend/src/components/Chatbot.jsx` keeps the current page-session conversation in local component state.
+3. Each prompt is sent to `POST /ai/chat` through the backend.
+4. The backend adds the system instruction, current problem context, and recent chat turns.
+5. The backend calls Gemini and returns plain reply text.
+6. The frontend renders that reply with Markdown styling.
 
 Important current behavior:
 
@@ -378,6 +376,11 @@ File: `Backend/src/routes/submission.routes.js`
 - `POST /submission/submit/:id`
 - `POST /submission/run/:id`
 - `GET /submission/getSubmission/:id`
+
+#### AI Routes
+File: `Backend/src/routes/ai.routes.js`
+
+- `POST /ai/chat`
 
 ### Judge0 Helper Layer
 File: `Backend/src/utils/problem.utils.js`
@@ -553,7 +556,7 @@ Wraps Monaco Editor and language switching.
 Shows sample test cases by default and flips to judge results after actions.
 
 #### `Chatbot.jsx`
-Creates a Gemini chat session with the current problem statement and editor contents.
+Maintains the in-page chat UI and sends each prompt to the backend AI proxy along with the current problem context and editor contents.
 
 ## Styling System
 

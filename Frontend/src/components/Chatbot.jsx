@@ -1,26 +1,9 @@
 // The AI assistant is intentionally scoped to the current page session.
-// It mixes the active problem statement with the user's current code so replies stay grounded in context.
+// It now talks to the backend proxy so deployed environments do not rely on browser-side Gemini calls.
 import React from "react";
-import { GoogleGenAI } from "@google/genai";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Markdown from "react-markdown";
-
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY ?? "";
-const MODEL_NAME = import.meta.env.VITE_GEMINI_MODEL ?? "gemini-2.5-flash";
-
-const SYSTEM_INSTRUCTION = `You are ZenCode AI, a strict DSA (Data Structures and Algorithms) instructor.
-
-RULES YOU MUST FOLLOW:
-1. You ONLY discuss DSA topics - algorithms, data structures, time/space complexity, coding problems, and related computer science fundamentals.
-2. If the user asks about ANYTHING outside DSA (e.g. web development, general chat, jokes, personal questions, other subjects), politely decline and redirect them back to DSA.
-3. NEVER give the full solution or code upfront. Follow a Socratic teaching method:
-   - First, give conceptual hints and ask the user to think.
-   - Then, walk them through the approach step-by-step.
-   - Only when the user explicitly says something like "give me the answer", "show me the code", or "explain the full solution", provide the complete breakdown with code.
-4. When you DO give code, break it down line by line and explain the reasoning behind each step.
-5. Format all responses using Markdown. Use code blocks for code snippets.
-6. Be encouraging but firm - push the user to think before revealing answers.
-7. Keep responses concise and focused. Avoid unnecessary filler text.`;
+import axiosClient from "../utils/axiosClient";
 
 const DEFAULT_WELCOME_TEXT =
     "Hi! I'm **ZenCode AI**, your DSA tutor. Ask me anything about this problem or your code. I won't give you the answer right away - let's think through it together!";
@@ -37,6 +20,27 @@ function createMessage(role, text) {
 
 function createDefaultMessages() {
     return [createMessage("assistant", DEFAULT_WELCOME_TEXT)];
+}
+
+function isDefaultWelcomeMessage(message) {
+    return message?.role === "assistant" && message?.text === DEFAULT_WELCOME_TEXT;
+}
+
+function serializeConversation(messages) {
+    if (!Array.isArray(messages)) return [];
+
+    return messages
+        .filter(
+            (message) =>
+                (message?.role === "user" || message?.role === "assistant") &&
+                typeof message?.text === "string" &&
+                message.text.trim().length > 0
+        )
+        .filter((message) => !isDefaultWelcomeMessage(message))
+        .map((message) => ({
+            role: message.role,
+            text: message.text,
+        }));
 }
 
 class ErrorBoundary extends React.Component {
@@ -66,40 +70,14 @@ class ErrorBoundary extends React.Component {
 function ChatbotInner({ prop, code, language }) {
     const propSafeguard = prop || {};
     const messagesRef = useRef(null);
-    const chatRef = useRef(null);
 
     const [prompt, setPrompt] = useState("");
     const [isSending, setIsSending] = useState(false);
     const [messages, setMessages] = useState(() => createDefaultMessages());
 
-    const initializeChatSession = useCallback(() => {
-        if (!API_KEY) {
-            chatRef.current = null;
-            return;
-        }
-
-        try {
-            const ai = new GoogleGenAI({ apiKey: API_KEY });
-            // We front-load the problem statement into the system prompt so follow-up questions stay anchored.
-            const problemContext = `Problem Title: ${propSafeguard.title || "No Title"}\nProblem Description: ${propSafeguard.description || "No Description"}`;
-
-            chatRef.current = ai.chats.create({
-                model: MODEL_NAME,
-                history: [],
-                config: {
-                    systemInstruction: `${SYSTEM_INSTRUCTION}\n\nThe user is currently solving the following problem:\n${problemContext}`,
-                },
-            });
-        } catch (error) {
-            chatRef.current = null;
-            console.error("Error initializing Gemini Chat:", error);
-        }
-    }, [propSafeguard.description, propSafeguard.title]);
-
     useEffect(() => {
         setMessages(createDefaultMessages());
-        initializeChatSession();
-    }, [initializeChatSession]);
+    }, [propSafeguard.description, propSafeguard.title]);
 
     useEffect(() => {
         const messageList = messagesRef.current;
@@ -115,32 +93,34 @@ function ChatbotInner({ prop, code, language }) {
         const trimmedPrompt = (overridePrompt || prompt).trim();
         if (!trimmedPrompt || isSending) return;
 
+        const conversationHistory = serializeConversation(messages);
+
         appendMessage("user", trimmedPrompt);
         if (!overridePrompt) setPrompt("");
         setIsSending(true);
 
         try {
-            if (!chatRef.current) {
-                appendMessage("assistant", "Chat session unavailable. Please check your `VITE_GEMINI_API_KEY` in `.env`.");
-                return;
-            }
+            const { data } = await axiosClient.post("/ai/chat", {
+                messages: conversationHistory,
+                prompt: trimmedPrompt,
+                code,
+                language,
+                problemTitle: propSafeguard.title || "No Title",
+                problemDescription: propSafeguard.description || "No Description",
+            });
 
-            const currentCodeContext = code
-                ? `\n[Current Editor Code (${language})]:\n\`\`\`${language}\n${code}\n\`\`\`\n`
-                : "";
-
-            // Each prompt carries the latest editor code so the assistant can review in-progress work, not stale ideas.
-            const enrichedPrompt = `${currentCodeContext}\nUser Question: ${trimmedPrompt}`;
-
-            const response = await chatRef.current.sendMessage({ message: enrichedPrompt });
-            const replyText =
-                response.text?.trim() ||
-                "I'm ready to help you think through this. Could you tell me what approach you're considering?";
-
-            appendMessage("assistant", replyText);
+            appendMessage(
+                "assistant",
+                data?.reply?.trim() ||
+                    "I'm ready to help you think through this. Could you tell me what approach you're considering?"
+            );
         } catch (error) {
-            console.error("Error sending message to Gemini:", error);
-            appendMessage("assistant", "I could not get a response. Please check the API key and try again.");
+            console.error("Error sending message to backend AI route:", error);
+            const message =
+                error?.response?.data?.error ||
+                error?.message ||
+                "I could not get a response right now.";
+            appendMessage("assistant", message);
         } finally {
             setIsSending(false);
         }

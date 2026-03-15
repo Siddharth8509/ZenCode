@@ -8,6 +8,7 @@ import authRouter from "./routes/auth.routes.js";
 import redisClient from "./config/redis.js";
 import problemRouter from "./routes/problem.routes.js";
 import submissionRouter from "./routes/submission.routes.js";
+import aiRouter from "./routes/ai.routes.js";
 import cors from "cors";
 import { fileURLToPath } from "url";
 
@@ -53,3 +54,4 @@ app.get("/", (req, res) => {
 app.use("/user", authRouter);
 app.use("/problem", problemRouter);
 app.use("/submission", submissionRouter);
+app.use("/ai", aiRouter);
