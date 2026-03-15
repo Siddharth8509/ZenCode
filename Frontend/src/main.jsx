@@ -1,3 +1,5 @@
+// This is the frontend bootstrap file.
+// It wires Redux and routing around the app before React mounts anything on screen.
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'

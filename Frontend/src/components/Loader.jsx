@@ -1,3 +1,5 @@
+// Small shared loading state used across pages and panels.
+// It keeps async empty states visually consistent.
 export default function Loader({ message = "Loading data...", compact = false }) {
   return (
     <div className={`flex items-center justify-center ${compact ? "py-6" : "py-12"}`}>

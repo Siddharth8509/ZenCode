@@ -1,3 +1,5 @@
+// This validator acts like a gatekeeper for registration payloads.
+// It keeps the controller focused on account creation instead of field-by-field checks.
 import validator from "validator"
 
 function authValidate(data)

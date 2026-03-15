@@ -1,3 +1,5 @@
+// A problem document bundles everything needed to practice one DSA question:
+// the prompt, starter code, test cases, editorial, and optional judge wrappers.
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 
@@ -12,9 +14,8 @@ const problemSchema = new Schema({
         required: true
     },
     tags: {
-        type: String,
-        enum: ["Array", "HashTable", "LinkedList", "Stack", "Queue", "Tree", "Graph", "Trie", "BinarySearch"],
-        required: true
+        type: [String],
+        required: true,
     },
     companies: {
         type: [String],
@@ -35,7 +36,7 @@ const problemSchema = new Schema({
         },
         explanation: {
             type: String,
-            required: true
+            default: ""
         }
     }],
     visibleTestCase: [{
@@ -69,6 +70,21 @@ const problemSchema = new Schema({
             required: true
         }
     }],
+    driverCode: [{
+        language: {
+            type: String,
+            required: true,
+            enum: ["javascript", "cpp", "java", "python"]
+        },
+        prefix: {
+            type: String,
+            default: ""
+        },
+        suffix: {
+            type: String,
+            default: ""
+        }
+    }],
     problemCreator: {
         type: Schema.Types.ObjectId,
         ref: "user",
@@ -98,9 +114,9 @@ const problemSchema = new Schema({
         default: 0,
     },
     editorial: {
-    type: String,
-    required: true
-  },
+        type: String,
+        default: ""
+    },
 })
 
 const problem = mongoose.model("problem", problemSchema);

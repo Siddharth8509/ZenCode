@@ -1,3 +1,5 @@
+// Keeping auth routes together makes the server bootstrap clean
+// and gives all account-related endpoints one obvious home.
 import express from "express";
 import { registerUser, loginUser, logoutUser, adminRegister, deleteUser, updateProfile, resetPassword } from "../controllers/UserAuth.controller.js";
 import authMiddleware from "../middleware/auth.middleware.js";

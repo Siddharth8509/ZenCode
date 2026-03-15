@@ -1,3 +1,5 @@
+// Adminpage is the content authoring surface for new practice problems.
+// It is intentionally form-heavy because it captures everything the judge and UI need later.
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -48,6 +50,26 @@ const adminSchema = z.object({
       })
     )
     .min(1, "At least one language code required"),
+  driverCode: z
+    .array(
+      z.object({
+        language: z.string().trim().min(1, "Language required"),
+        prefix: z.string().optional().default(""),
+        suffix: z.string().optional().default(""),
+      })
+    )
+    .optional()
+    .default([]),
+  editorial: z.string().optional().default(""),
+  referenceSolution: z
+    .array(
+      z.object({
+        language: z.string().trim().min(1, "Language required"),
+        solution: z.string().trim().min(1, "Solution required"),
+      })
+    )
+    .optional()
+    .default([]),
 });
 
 const TAG_OPTIONS = [
@@ -76,6 +98,9 @@ export default function Adminpage() {
       examples: [{ input: "", output: "", explanation: "" }],
       testCases: [{ input: "", expectedOutput: "" }],
       initialCode: [{ language: "cpp", code: "" }],
+      driverCode: [{ language: "cpp", prefix: "", suffix: "" }],
+      editorial: "",
+      referenceSolution: [],
     },
   });
 
@@ -103,9 +128,21 @@ export default function Adminpage() {
     remove: removeCode,
   } = useFieldArray({ control, name: "initialCode" });
 
+  const {
+    fields: driverFields,
+    append: appendDriver,
+    remove: removeDriver,
+  } = useFieldArray({ control, name: "driverCode" });
+
+  const {
+    fields: refSolFields,
+    append: appendRefSol,
+    remove: removeRefSol,
+  } = useFieldArray({ control, name: "referenceSolution" });
+
   const onSubmit = async (data) => {
     try {
-      await axiosClient.post("/problem/createProblem", data);
+      await axiosClient.post("/problem/create", data);
       reset();
       alert("Problem created!");
     } catch (e) {
@@ -358,6 +395,114 @@ export default function Adminpage() {
               + Add Language
             </button>
             <p className="text-red-400 text-xs mt-1">{errors.initialCode?.message}</p>
+          </section>
+
+          {/* Driver Code (main/IO boilerplate) */}
+          <section className="glass-panel p-6 rounded-2xl border border-white/10 space-y-4">
+            <h2 className="text-lg font-semibold border-l-4 border-violet-500 pl-4">Driver Code (Judge0 Wrapper)</h2>
+            <p className="text-xs text-neutral-500">The user's code is sandwiched between <strong>prefix</strong> and <strong>suffix</strong>. The suffix should contain main() that reads stdin, calls the Solution method, and prints to stdout.</p>
+            {driverFields.map((field, index) => (
+              <div key={field.id} className="p-4 rounded-xl bg-neutral-900/70 border border-white/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-neutral-400">Driver {index + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeDriver(index)}
+                    className="text-rose-400 hover:text-rose-300 text-sm font-semibold"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <select
+                  {...register(`driverCode.${index}.language`)}
+                  className="w-full bg-neutral-900/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                >
+                  <option value="cpp">C++</option>
+                  <option value="java">Java</option>
+                  <option value="python">Python</option>
+                  <option value="javascript">JavaScript</option>
+                </select>
+                <div>
+                  <label className="text-xs text-neutral-500">Prefix (includes, headers — added BEFORE user code)</label>
+                  <textarea
+                    {...register(`driverCode.${index}.prefix`)}
+                    rows={3}
+                    className="w-full mt-1 bg-neutral-900/50 border border-white/10 rounded-xl px-4 py-2 text-white font-mono text-sm focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                    placeholder="#include <bits/stdc++.h>&#10;using namespace std;"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500">Suffix (main function — added AFTER user code)</label>
+                  <textarea
+                    {...register(`driverCode.${index}.suffix`)}
+                    rows={8}
+                    className="w-full mt-1 bg-neutral-900/50 border border-white/10 rounded-xl px-4 py-2 text-white font-mono text-sm focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                    placeholder="int main() {&#10;    // read stdin, call Solution, print result&#10;}"
+                  />
+                </div>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => appendDriver({ language: "cpp", prefix: "", suffix: "" })}
+              className="text-orange-400 hover:text-orange-300 text-sm font-semibold"
+            >
+              + Add Driver Code
+            </button>
+            <p className="text-red-400 text-xs mt-1">{errors.driverCode?.message}</p>
+          </section>
+
+          {/* Editorial */}
+          <section className="glass-panel p-6 rounded-2xl border border-white/10 space-y-4">
+            <h2 className="text-lg font-semibold border-l-4 border-emerald-500 pl-4">Editorial (Optional)</h2>
+            <textarea
+              {...register("editorial")}
+              rows={6}
+              className="w-full bg-neutral-900/70 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all font-mono text-sm"
+              placeholder="Write the editorial in Markdown. Explain the optimal approach, time/space complexity, etc."
+            />
+          </section>
+
+          {/* Reference Solutions (Optional) */}
+          <section className="glass-panel p-6 rounded-2xl border border-white/10 space-y-4">
+            <h2 className="text-lg font-semibold border-l-4 border-cyan-500 pl-4">Reference Solutions (Optional)</h2>
+            <p className="text-xs text-neutral-500">If provided, solutions will be validated against test cases via Judge0 before saving.</p>
+            {refSolFields.map((field, index) => (
+              <div key={field.id} className="p-4 rounded-xl bg-neutral-900/70 border border-white/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-neutral-400">Solution {index + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeRefSol(index)}
+                    className="text-rose-400 hover:text-rose-300 text-sm font-semibold"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <select
+                  {...register(`referenceSolution.${index}.language`)}
+                  className="w-full bg-neutral-900/50 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                >
+                  <option value="cpp">C++</option>
+                  <option value="java">Java</option>
+                  <option value="python">Python</option>
+                  <option value="javascript">JavaScript</option>
+                </select>
+                <textarea
+                  {...register(`referenceSolution.${index}.solution`)}
+                  rows={6}
+                  className="w-full bg-neutral-900/50 border border-white/10 rounded-xl px-4 py-2 text-white font-mono text-sm focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all"
+                  placeholder="Full working solution..."
+                />
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => appendRefSol({ language: "cpp", solution: "" })}
+              className="text-orange-400 hover:text-orange-300 text-sm font-semibold"
+            >
+              + Add Reference Solution
+            </button>
           </section>
 
           {/* Submit */}

@@ -1,3 +1,5 @@
+// This page handles sign-in and the small toast handoff after logout.
+// It is designed to feel polished while still staying close to the auth slice underneath.
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -166,7 +168,7 @@ export default function Loginpage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(v => !v)}
-                    className="absolute right-3 top-1/2 -tranneutral-y-1/2 text-neutral-400 hover:text-neutral-300 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-300 transition-colors"
                   >
                     {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                   </button>

@@ -1,3 +1,5 @@
+// This schema stores the long-lived identity for every ZenCode account.
+// `problemSolved` doubles as the quick source of truth for progress-related UI.
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 import problem from "./problem.js";

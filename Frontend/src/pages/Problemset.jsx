@@ -1,3 +1,5 @@
+// Problemset is the user's practice lobby.
+// It loads every problem, groups them into a friendlier study view, and highlights solved progress.
 import { useSelector } from "react-redux";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -79,6 +81,7 @@ export default function Problemset() {
         let nextPage = 1;
         let shouldFetchMore = true;
 
+        // The backend paginates in small chunks, so we keep pulling until there is nothing left.
         while (shouldFetchMore) {
           const res = await axiosClient.get(`/problem/getAllProblems?page=${nextPage}`);
           const fetchedProblems = Array.isArray(res.data?.problems) ? res.data.problems : [];
@@ -148,6 +151,7 @@ export default function Problemset() {
     const groupedByTopic = new Map();
 
     problems.forEach((prob) => {
+      // A single problem can belong to multiple study buckets when it has multiple tags.
       const topics = toTopicArray(prob.tags);
 
       topics.forEach((topic) => {
@@ -240,6 +244,7 @@ export default function Problemset() {
   const handleDeleteProblem = async (problemId, title) => {
     if (user?.role !== "admin") return;
 
+    // Native confirm is simple here and hard to miss for a destructive admin action.
     const shouldDelete = window.confirm(`Delete "${title}" permanently? This action cannot be undone.`);
     if (!shouldDelete) return;
 

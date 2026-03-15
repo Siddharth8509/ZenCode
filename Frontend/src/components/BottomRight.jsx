@@ -1,3 +1,5 @@
+// BottomRight is the feedback panel under the editor.
+// It gives users quick access to sample tests first, then flips to runtime results after a run or submit.
 import { useState, useEffect, useMemo } from "react";
 
 export default function BottomRight({ prop, output }) {

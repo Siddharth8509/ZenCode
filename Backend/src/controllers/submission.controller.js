@@ -1,4 +1,6 @@
-import {getLanguageId,submitBatch,submitToken} from "../utils/problem.utils.js";
+// Submission controller powers the core coding workflow.
+// It runs code through Judge0, records submit attempts, and updates solved progress.
+import { getLanguageId, submitBatch, submitToken } from "../utils/problem.utils.js";
 import mongoose from "mongoose";
 import problem from "../model/problem.js";
 import user from "../model/user.js";
@@ -19,15 +21,25 @@ const mapJudgeStatus = (statusId) => {
     }
 };
 
-const submitCode = async(req,res) => {
-    try
-    {
+function wrapCodeWithDriver(userCode, language, problemData) {
+    const driver = (problemData.driverCode || []).find(d => d.language === language);
+    if (!driver) {
+        // Older problems may not define driver wrappers, so we fall back to the raw user code.
+        return userCode;
+    }
+    const prefix = driver.prefix || "";
+    const suffix = driver.suffix || "";
+    return `${prefix}\n${userCode}\n${suffix}`;
+}
+
+const submitCode = async (req, res) => {
+    try {
         const userId = req.userId;
         const problemId = req.params.id;
-        const {code,language} = req.body;
-        if(!userId || !problemId || !code || !language)
+        const { code, language } = req.body;
+        if (!userId || !problemId || !code || !language)
             return res.status(400).send("Please enter all valid fields");
-        if (!mongoose.Types.ObjectId.isValid(problemId)) 
+        if (!mongoose.Types.ObjectId.isValid(problemId))
             return res.status(400).send("Invalid problem id format");
 
         const userInfo = await user.findById(userId);
@@ -35,28 +47,36 @@ const submitCode = async(req,res) => {
             return res.status(401).send("Invalid user");
 
         const problemData = await problem.findById(problemId);
-        if(!problemData)
+        if (!problemData)
             return res.status(404).send("Invalid problemId");
 
         const submitedProblem = await submission.create({
-            userId : userId,
-            problemId : problemId,
-            code : code,
-            language : language,
-            status : "pending",
-            testCasesTotal : problemData.hiddenTestCase.length
+            userId: userId,
+            problemId: problemId,
+            code: code,
+            language: language,
+            status: "pending",
+            testCasesTotal: problemData.hiddenTestCase.length
         });
         const languageId = getLanguageId(language);
+        if (!languageId)
+            return res.status(400).send("Unsupported language");
 
-        const judgeSubmissions  = problemData.hiddenTestCase.map(({input,output})=>({
-            source_code : code,
-            language_id : languageId,
-            stdin : input,
-            expected_output : output
+        // Driver wrappers let problem authors control stdin/stdout parsing without forcing that boilerplate on users.
+        const executableCode = wrapCodeWithDriver(code, language, problemData);
+
+        if (!Array.isArray(problemData.hiddenTestCase) || problemData.hiddenTestCase.length === 0)
+            return res.status(400).send("No hidden test cases configured for this problem");
+
+        const judgeSubmissions = problemData.hiddenTestCase.map(({ input, output }) => ({
+            source_code: executableCode,
+            language_id: languageId,
+            stdin: input,
+            expected_output: output
         }))
 
         const submitResult = await submitBatch(judgeSubmissions);
-        const resultToken = submitResult.map((value)=>value.token)
+        const resultToken = submitResult.map((value) => value.token)
         const testResults = await submitToken(resultToken);
 
         let runtime = 0;
@@ -65,16 +85,14 @@ const submitCode = async(req,res) => {
         let problemStatus = "accepted"
         let errorMessage = null;
 
-        for (const test of testResults) 
-        {
-            if (test.status_id === 3) 
-            {
+        // We stop at the first failing hidden test because that is enough to grade the submission.
+        for (const test of testResults) {
+            if (test.status_id === 3) {
                 testCasesPassed++;
                 runtime += parseFloat(test.time) || 0;
                 memory = Math.max(memory, test.memory || 0);
-            } 
-            else 
-            {
+            }
+            else {
                 errorMessage = test.stderr || test.compile_output || "Execution error";
                 problemStatus = mapJudgeStatus(test.status_id);
                 break;
@@ -88,14 +106,13 @@ const submitCode = async(req,res) => {
         submitedProblem.errorMessage = errorMessage;
         submitedProblem.status = problemStatus;
 
-        if (problemStatus === "accepted") 
-        {
+        if (problemStatus === "accepted") {
+            // `problemSolved` is updated only once per user per problem so progress cards stay stable.
             const alreadySolved = userInfo.problemSolved.some(
                 (solvedProblemId) => solvedProblemId.toString() === problemData._id.toString()
             );
 
-            if (!alreadySolved) 
-            {    
+            if (!alreadySolved) {
                 userInfo.problemSolved.push(problemData._id);
                 await userInfo.save();
             }
@@ -113,21 +130,19 @@ const submitCode = async(req,res) => {
             testCasesTotal: problemData.hiddenTestCase.length,
         });
     }
-    catch(error)
-    {
-        res.status(500).send("Internal server error"+error.message);
+    catch (error) {
+        res.status(500).send("Internal server error" + error.message);
     }
 }
 
-const runCode = async(req,res) => {
-    try
-    {
+const runCode = async (req, res) => {
+    try {
         const userId = req.userId;
         const problemId = req.params.id;
-        const {code,language} = req.body;
-        if(!userId || !problemId || !code || !language)
+        const { code, language } = req.body;
+        if (!userId || !problemId || !code || !language)
             return res.status(400).send("Please enter all valid fields");
-        if (!mongoose.Types.ObjectId.isValid(problemId)) 
+        if (!mongoose.Types.ObjectId.isValid(problemId))
             return res.status(400).send("Invalid problem id format");
 
         const userInfo = await user.findById(userId);
@@ -135,20 +150,28 @@ const runCode = async(req,res) => {
             return res.status(401).send("Invalid user");
 
         const problemData = await problem.findById(problemId);
-        if(!problemData)
+        if (!problemData)
             return res.status(404).send("Invalid problemId");
 
         const languageId = getLanguageId(language);
+        if (!languageId)
+            return res.status(400).send("Unsupported language");
 
-        const judgeSubmissions  = problemData.visibleTestCase.map(({input,output})=>({
-            source_code : code,
-            language_id : languageId,
-            stdin : input,
-            expected_output : output
+        // Run mode uses the same wrapper logic as submit mode, but only against visible sample cases.
+        const executableCode = wrapCodeWithDriver(code, language, problemData);
+
+        if (!Array.isArray(problemData.visibleTestCase) || problemData.visibleTestCase.length === 0)
+            return res.status(400).send("No visible test cases configured for this problem");
+
+        const judgeSubmissions = problemData.visibleTestCase.map(({ input, output }) => ({
+            source_code: executableCode,
+            language_id: languageId,
+            stdin: input,
+            expected_output: output
         }))
 
         const submitResult = await submitBatch(judgeSubmissions);
-        const resultToken = submitResult.map((value)=>value.token)
+        const resultToken = submitResult.map((value) => value.token)
         const testResults = await submitToken(resultToken);
 
         let runtime = 0;
@@ -157,16 +180,13 @@ const runCode = async(req,res) => {
         let problemStatus = "accepted"
         let errorMessage = null;
 
-        for (const test of testResults) 
-        {
-            if (test.status_id === 3) 
-            {
+        for (const test of testResults) {
+            if (test.status_id === 3) {
                 testCasesPassed++;
                 runtime += parseFloat(test.time) || 0;
                 memory = Math.max(memory, test.memory || 0);
-            } 
-            else 
-            {
+            }
+            else {
                 errorMessage = test.stderr || test.compile_output || "Execution error";
                 problemStatus = mapJudgeStatus(test.status_id);
                 break;
@@ -174,10 +194,9 @@ const runCode = async(req,res) => {
         }
 
         res.status(201).json({ "errorMessage": errorMessage, "runtime": runtime, "problemStatus": problemStatus, "memory": memory });
-    } 
-    catch(error)
-    {
-        res.status(500).send("Internal server error"+error.message);
+    }
+    catch (error) {
+        res.status(500).send("Internal server error" + error.message);
     }
 }
 
@@ -197,4 +216,4 @@ const getSubmission = async (req, res) => {
     }
 }
 
-export  {submitCode,runCode,getSubmission};
+export { submitCode, runCode, getSubmission };

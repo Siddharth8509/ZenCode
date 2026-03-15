@@ -1,3 +1,5 @@
+// This controller owns the full account lifecycle:
+// sign up, sign in, sign out, profile edits, password resets, and account deletion.
 import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -12,12 +14,14 @@ const registerUser = async (req, res) => {
     try {
         authValidate(req.body);
 
+        // We force the public signup route to create normal users only.
         req.body.role = "user";
         const { password, ...data } = req.body;
         const emailId = req.body.emailId;
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = await User.create({ password: hashedPassword, ...data });
 
+        // The frontend relies on this cookie-based session, so we mint the token right after signup.
         const token = jwt.sign({ _id: newUser._id, emailId: emailId, role: newUser.role }, process.env.JWT_SECRET, { expiresIn: 60 * 60 });
 
         const userData = await User.findOne({ emailId });
@@ -95,6 +99,7 @@ const logoutUser = async (req, res) => {
         if (token) {
             const payload = jwt.decode(token);
             if (payload && payload.exp) {
+                // Blacklisting lets us "invalidate" a stateless JWT until it naturally expires.
                 const expTime = payload.exp;
                 await redisClient.set(`token:${token}`, "Blocked");
                 await redisClient.expireAt(`token:${token}`, expTime);
@@ -152,6 +157,7 @@ const deleteUser = async (req, res) => {
         if (!userExist)
             return res.status(404).send("user does not exist");
 
+        // Submissions are removed alongside the account so profile stats do not keep orphaned data around.
         await submission.deleteMany({ userId: id });
         await User.findByIdAndDelete(id);
 
@@ -169,7 +175,7 @@ const updateProfile = async (req, res) => {
 
         const { firstname, lastname, age, gender } = req.body;
 
-        // Find and update user, but strictly exclude email from updates
+        // Email stays immutable in this product, so the profile edit form only touches editable identity fields.
         const updatedUser = await User.findByIdAndUpdate(
             id,
             { firstname, lastname, age, gender },

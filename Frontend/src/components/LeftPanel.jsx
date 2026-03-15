@@ -1,3 +1,5 @@
+// LeftPanel is the reading side of the IDE.
+// It swaps between the problem statement, editorial, submission history, and AI chat.
 import {
     TagIcon,
     BriefcaseIcon,
@@ -13,8 +15,9 @@ import { getSubmissionsApi } from "../api/submission";
 import { useParams } from "react-router-dom";
 import MarkdownPreview from "@uiw/react-markdown-preview";
 import Markdown from "react-markdown";
+import Chatbot from "./Chatbot";
 
-export default function LeftPanel({ prop }) {
+export default function LeftPanel({ prop, code, language }) {
     const companies = Array.isArray(prop?.companies)
         ? prop.companies
             .flatMap((item) => String(item).split(","))
@@ -38,6 +41,7 @@ export default function LeftPanel({ prop }) {
 
     useEffect(() => {
         if (activeTab === "submissions" && id) {
+            // Submission history is loaded lazily so normal tab switches stay cheap.
             loadSubmissions();
         }
     }, [activeTab, id]);
@@ -61,6 +65,7 @@ export default function LeftPanel({ prop }) {
         { id: "description", label: "Description" },
         { id: "editorial", label: "Editorial" },
         { id: "submissions", label: "Submissions" },
+        { id: "chatbot", label: "AI Assistant" },
     ];
 
     const getDifficultyColor = (diff) => {
@@ -94,7 +99,7 @@ export default function LeftPanel({ prop }) {
                 ))}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-7 min-h-0">
+            <div className={`flex-1 overflow-y-auto min-h-0 ${activeTab === "chatbot" ? "" : "p-6 space-y-7"}`}>
                 {activeTab === "description" && (
                     <>
                         <div className="flex items-center justify-between">
@@ -313,6 +318,12 @@ export default function LeftPanel({ prop }) {
                                 <p className="text-neutral-600 text-xs mt-1">An editorial hasn't been added for this problem yet.</p>
                             </div>
                         )}
+                    </div>
+                )}
+
+                {activeTab === "chatbot" && (
+                    <div className="h-full">
+                        <Chatbot prop={prop} code={code} language={language} />
                     </div>
                 )}
             </div>

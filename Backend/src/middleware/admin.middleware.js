@@ -1,3 +1,5 @@
+// This is the stricter sibling of auth middleware.
+// It does the same token checks, then makes sure the caller is really an admin.
 import redisClient from "../config/redis.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";

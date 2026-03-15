@@ -1,3 +1,5 @@
+// Submission routes power the IDE loop:
+// run code against sample tests, submit against hidden tests, and review past attempts.
 import express from "express";
 import authMiddleware from "../middleware/auth.middleware.js";
 import { submitCode, runCode, getSubmission } from "../controllers/submission.controller.js";

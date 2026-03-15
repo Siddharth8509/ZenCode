@@ -1,3 +1,5 @@
+// Homepage is the public-facing landing page.
+// It is mostly presentation, but it also sets expectations about the learning experience.
 import { useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { Link } from "react-router-dom";

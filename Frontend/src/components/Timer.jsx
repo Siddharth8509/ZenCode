@@ -1,3 +1,5 @@
+// This timer is a lightweight practice companion for the IDE page.
+// It is intentionally local-only, so users can start, pause, or reset without hitting the backend.
 import { useState, useEffect } from "react";
 import { PlayIcon, PauseIcon, ArrowPathIcon } from "@heroicons/react/24/solid";
 

@@ -1,3 +1,5 @@
+/* This stylesheet defines the global visual language for ZenCode:
+   fonts, motion helpers, glass surfaces, and a few utility classes that Tailwind alone would be noisy for. */
 @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap");
 @import "tailwindcss";
 

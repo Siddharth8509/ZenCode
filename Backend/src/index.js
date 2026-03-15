@@ -1,3 +1,5 @@
+// This is the backend entry point.
+// It boots Express, connects the supporting services, and mounts every API router.
 import express from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
@@ -16,7 +18,7 @@ app.set("trust proxy", 1);
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: ["http://localhost:5173", "https://zencode-project.vercel.app"],
+    origin: ["http://localhost:5173", "http://localhost:5174", "https://zencode-project.vercel.app"],
     credentials: true,
 }));
 

@@ -1,3 +1,5 @@
+/* App.css stays intentionally light.
+   Most styling lives in Tailwind classes, so this file only keeps a couple of app-wide helpers. */
 .app {
   min-height: 100vh;
 }

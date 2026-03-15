@@ -1,3 +1,5 @@
+// Profile pulls together identity settings and progress analytics.
+// It is where users can see momentum, edit basics, and change their password.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { updateProfile, resetPassword } from "../authSlice";

@@ -1,3 +1,5 @@
+// The navbar gives the app one consistent top-level navigation pattern.
+// It also exposes the current user's quick actions without every page rebuilding that UI.
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { logoutUser } from "../authSlice";

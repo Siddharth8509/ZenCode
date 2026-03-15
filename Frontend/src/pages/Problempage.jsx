@@ -1,3 +1,5 @@
+// Problempage is the heart of the product.
+// It brings together the prompt, editor, judge results, submissions, and AI assistant in one IDE-style layout.
 import { useState, useEffect, useMemo } from "react";
 import axiosClient from "../utils/axiosClient";
 import { useParams, useNavigate } from "react-router-dom";
@@ -25,6 +27,7 @@ export default function Problempage() {
                 const res = await axiosClient.get(`/problem/problemById/${id}`)
                 setProblemData(res.data);
 
+                // We immediately hydrate the editor with the starter template for the current language.
                 if (res.data?.initialCode) {
                     const codeObj = res.data.initialCode.find((obj) => obj.language === language);
                     if (codeObj) setCode(codeObj.code);
@@ -46,6 +49,7 @@ export default function Problempage() {
                 let page = 1;
                 let hasMore = true;
 
+                // Previous/next navigation is built from the same paginated list the problemset uses.
                 while (hasMore) {
                     const res = await axiosClient.get(`/problem/getAllProblems?page=${page}`);
                     const fetchedProblems = Array.isArray(res.data?.problems) ? res.data.problems : [];
@@ -94,6 +98,7 @@ export default function Problempage() {
 
     useEffect(() => {
         if (problemData?.initialCode) {
+            // Changing language should feel like switching tabs, not like opening a blank editor.
             const codeObj = problemData.initialCode.find((obj) => obj.language === language);
             if (codeObj) {
                 setCode(codeObj.code);
@@ -138,7 +143,7 @@ export default function Problempage() {
         try {
             const res = await submitCodeApi(id, code, language);
             if (res && typeof res === "object") {
-                // Sanitize every field to strings so React never tries to render objects
+                // The popup UI expects plain renderable values, so we normalize everything before storing it.
                 const safePayload = {
                     type: 'submit',
                     problemStatus: res.problemStatus ? String(res.problemStatus) : null,
@@ -250,7 +255,7 @@ export default function Problempage() {
                     <Group orientation="horizontal" className="z-10 relative p-1 h-full w-full min-h-0 min-w-0">
 
                         <Panel defaultSize="40%" minSize="25%" className="m-1 rounded-xl overflow-hidden border border-white/10 shadow-2xl min-h-0 min-w-0">
-                            <LeftPanel prop={problemData} />
+                            <LeftPanel prop={problemData} code={code} language={language} />
                         </Panel>
                         <Separator className="w-1 cursor-col-resize bg-transparent hover:bg-orange-400/60 transition-colors" />
 

@@ -1,3 +1,5 @@
+// Submission API helpers keep page components from repeating request boilerplate.
+// They return plain response data so the IDE page can stay focused on UI state.
 import axiosClient from "../utils/axiosClient";
 
 export const runCodeApi = async (problemId, code, language) => {

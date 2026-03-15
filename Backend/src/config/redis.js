@@ -1,3 +1,5 @@
+// Redis is only used here as a session blacklist store for logged-out JWTs.
+// Keeping the client config isolated makes the auth flow easier to reason about.
 import redis from "redis";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";

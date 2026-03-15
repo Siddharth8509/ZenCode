@@ -1,3 +1,5 @@
+// App is the routing shell for ZenCode.
+// It also restores the logged-in session once at startup so route guards can behave correctly.
 import { useEffect } from 'react'
 import './App.css'
 import Signupform from './pages/Signupform';
@@ -16,6 +18,7 @@ function App() {
   const dispatch = useDispatch();
 
   useEffect(() => {
+    // We ask the backend once on app boot whether the cookie still represents a live session.
     dispatch(checkAuth());
   }, [dispatch])
 
@@ -35,7 +38,6 @@ function App() {
         <Route path="/signup" element={isAuthenticated ? <Navigate to="/problemset" /> : <Signupform />} />
         <Route path="/problemset" element={isAuthenticated ? <Problemset /> : <Navigate to="/login" />} />
         <Route path="/admin" element={isAuthenticated ? <Adminpage /> : <Navigate to="/login" />} />
-        <Route path="/learning-path" element={<Navigate to="/problemset" replace />} />
         <Route path="/profile" element={isAuthenticated ? <Profile /> : <Navigate to="/login" />} />
         <Route path="/problem/:id" element={isAuthenticated ? <Problempage /> : <Navigate to="/login" />} />
       </Routes>

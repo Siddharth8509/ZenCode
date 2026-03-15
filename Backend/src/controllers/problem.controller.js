@@ -1,3 +1,5 @@
+// Problem controller is the backend brain for authoring and browsing practice questions.
+// It handles admin CRUD, problem detail reads, and user progress summaries.
 import { getLanguageId, submitBatch, submitToken } from "../utils/problem.utils.js";
 import mongoose from "mongoose";
 import problem from "../model/problem.js";
@@ -11,50 +13,69 @@ const createProblem = async (req, res) => {
             title, difficulty, tags, companies,
             description, examples, visibleTestCase,
             hiddenTestCase, initialCode,
-            referenceSolution
+            referenceSolution, testCases, editorial
         } = req.body;
 
-        for (const { language, solution } of referenceSolution) {
-            const languageId = getLanguageId(language);
+        // The admin form sends a friendly `testCases` array, so we normalize it into the shape the judge expects.
+        const finalVisibleTestCase = visibleTestCase || (testCases || []).map(tc => ({
+            input: tc.input,
+            output: (tc.expectedOutput || tc.output || "").trim()
+        }));
+        const finalHiddenTestCase = hiddenTestCase || finalVisibleTestCase;
 
-            const submission = visibleTestCase.map(({ input, output }) => ({
-                source_code: solution,
-                language_id: languageId,
-                stdin: input,
-                expected_output: output.trim()
-            }));
+        // Reference solutions are treated as a safety net:
+        // if an admin includes them, we verify they really pass before saving the problem.
+        if (referenceSolution && referenceSolution.length > 0 && finalVisibleTestCase.length > 0) {
+            for (const { language, solution } of referenceSolution) {
+                const languageId = getLanguageId(language);
+                if (!languageId) {
+                    return res.status(400).send(`Unsupported reference solution language: ${language}`);
+                }
 
-            const submitResult = await submitBatch(submission);
-            if (!submitResult?.length) {
-                return res.status(500).send("Judge submission failed");
-            }
+                const submission = finalVisibleTestCase.map(({ input, output }) => ({
+                    source_code: solution,
+                    language_id: languageId,
+                    stdin: input,
+                    expected_output: (output || "").trim()
+                }));
 
-            const tokens = submitResult.map(s => s.token);
-            const testResults = await submitToken(tokens);
+                const submitResult = await submitBatch(submission);
+                if (!submitResult?.length) {
+                    return res.status(500).send("Judge submission failed");
+                }
 
-            for (const test of testResults) {
-                console.log({
-                    stdin: test.stdin,
-                    expected: test.expected_output,
-                    stdout: test.stdout,
-                    status: test.status?.description
-                });
+                const tokens = submitResult.map(s => s.token);
+                const testResults = await submitToken(tokens);
 
-                if (test.status_id === 3) continue;
-                if (test.status_id === 4) return res.status(406).send("Wrong Answer");
-                if (test.status_id === 5) return res.status(406).send("Time Limit Exceeded");
-                if (test.status_id === 6) return res.status(406).send("Compilation Error");
-
-                return res.status(406).send("Runtime Error");
+                for (const test of testResults) {
+                    if (test.status_id === 3) continue;
+                    if (test.status_id === 4) return res.status(406).send("Wrong Answer");
+                    if (test.status_id === 5) return res.status(406).send("Time Limit Exceeded");
+                    if (test.status_id === 6) return res.status(406).send("Compilation Error");
+                    return res.status(406).send("Runtime Error");
+                }
             }
         }
 
-        await problem.create({ ...req.body, problemCreator: req.userId });
+        await problem.create({
+            title,
+            difficulty,
+            tags: Array.isArray(tags) ? tags : [tags],
+            companies: Array.isArray(companies) ? companies : (companies || "").split(",").map(c => c.trim()).filter(Boolean),
+            description,
+            examples,
+            visibleTestCase: finalVisibleTestCase,
+            hiddenTestCase: finalHiddenTestCase,
+            initialCode,
+            referenceSolution: referenceSolution || [],
+            editorial: editorial || "",
+            problemCreator: req.userId,
+        });
         return res.status(201).send("Problem created successfully");
 
     } catch (error) {
         console.error(error);
-        res.status(500).send("Internal server error");
+        res.status(500).send("Internal server error: " + error.message);
     }
 };
 
@@ -74,6 +95,7 @@ const getProblemById = async (req, res) => {
 
 
         return res.status(200).json({
+            _id: problemDoc._id,
             problemId: problemDoc._id,
             title: problemDoc.title,
             description: problemDoc.description,
@@ -99,6 +121,7 @@ const problemFetchAll = async (req, res) => {
 
         const problemskip = (page - 1) * problemlimit;
 
+        // The problem list stays intentionally lean because the frontend only needs summary cards here.
         const problems = await problem.find({}).select("title _id difficulty tags ").skip(problemskip).limit(problemlimit);
 
         const totalProblems = await problem.countDocuments();
@@ -143,6 +166,9 @@ const updateProblem = async (req, res) => {
         if (referenceSolution && visibleTestCase) {
             for (const { language, solution } of referenceSolution) {
                 const languageId = getLanguageId(language);
+                if (!languageId) {
+                    return res.status(400).send(`Unsupported reference solution language: ${language}`);
+                }
 
                 const submission = visibleTestCase.map(({ input, output }) => ({
                     source_code: solution,
@@ -201,6 +227,8 @@ const solvedProblemByUser = async (req, res) => {
             ? Math.round((solvedCount / totalProblems) * 100)
             : 0;
 
+        // Recent solves are built from submissions instead of `problemSolved`
+        // so we can keep the timestamps of when a question was last cleared.
         const recentSolvedRaw = await submission.aggregate([
             {
                 $match: {
@@ -288,4 +316,17 @@ const getSubmission = async (req, res) => {
     }
 };
 
-export { createProblem, getProblemById, problemFetchAll, updateProblem, solvedProblemByUser, deleteProblem, getSubmission };
+const cleanupOrphanedData = async (req, res) => {
+    try {
+        // Clear all users' problemSolved arrays
+        await user.updateMany({}, { $set: { problemSolved: [] } });
+        // Delete all submissions
+        await submission.deleteMany({});
+        return res.status(200).json({ message: "Cleanup complete. All problemSolved arrays cleared, all submissions deleted." });
+    } catch (error) {
+        console.error("Cleanup error:", error);
+        return res.status(500).send("Cleanup failed: " + error.message);
+    }
+};
+
+export { createProblem, getProblemById, problemFetchAll, updateProblem, solvedProblemByUser, deleteProblem, getSubmission, cleanupOrphanedData };

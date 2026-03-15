@@ -1,7 +1,9 @@
+// This slice is the single source of truth for authentication state on the client.
+// Every auth-related screen reads from here instead of juggling its own session logic.
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axiosClient from "./utils/axiosClient"; // use your configured axios instance
 
-// REGISTER
+// Signup and login both return the user payload, so the UI can treat them as "session established".
 export const registerUser = createAsyncThunk(
   "auth/register",
   async (userData, { rejectWithValue }) => {
@@ -16,7 +18,6 @@ export const registerUser = createAsyncThunk(
   }
 );
 
-// LOGIN
 export const loginUser = createAsyncThunk(
   "auth/login",
   async (credentials, { rejectWithValue }) => {
@@ -31,7 +32,7 @@ export const loginUser = createAsyncThunk(
   }
 );
 
-// CHECK AUTH
+// App boot calls this thunk to restore auth state from the server-side cookie.
 export const checkAuth = createAsyncThunk(
   "auth/check",
   async (_, { rejectWithValue }) => {
@@ -44,7 +45,6 @@ export const checkAuth = createAsyncThunk(
   }
 );
 
-// LOGOUT
 export const logoutUser = createAsyncThunk(
   "auth/logout",
   async (_, { rejectWithValue }) => {
@@ -57,7 +57,6 @@ export const logoutUser = createAsyncThunk(
   }
 );
 
-// UPDATE PROFILE
 export const updateProfile = createAsyncThunk(
   "auth/updateProfile",
   async (profileData, { rejectWithValue }) => {
@@ -72,7 +71,6 @@ export const updateProfile = createAsyncThunk(
   }
 );
 
-// RESET PASSWORD
 export const resetPassword = createAsyncThunk(
   "auth/resetPassword",
   async (passwordData, { rejectWithValue }) => {

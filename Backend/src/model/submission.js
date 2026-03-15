@@ -1,3 +1,5 @@
+// Every submit action becomes a submission record so users can review past attempts.
+// We also reuse this collection for progress summaries on the profile page.
 import mongoose from "mongoose";
 const {Schema} = mongoose;
 import user from "./user.js";

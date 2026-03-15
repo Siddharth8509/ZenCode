@@ -1,19 +1,21 @@
+// Problem routes cover both sides of the platform:
+// admin problem management and user-facing reads like the problem list and progress stats.
 import express from "express";
 import adminMiddleware from "../middleware/admin.middleware.js";
 const problemRouter = express.Router();
-import {createProblem,getProblemById,problemFetchAll,updateProblem,solvedProblemByUser,deleteProblem,getSubmission} from "../controllers/problem.controller.js" 
+import { createProblem, getProblemById, problemFetchAll, updateProblem, solvedProblemByUser, deleteProblem, getSubmission, cleanupOrphanedData } from "../controllers/problem.controller.js"
 import authMiddleware from "../middleware/auth.middleware.js";
 
-//In this we just have to validate the admin
-problemRouter.post("/create",adminMiddleware,createProblem);
-problemRouter.put("/update/:id",adminMiddleware,updateProblem);
-problemRouter.delete("/delete/:id",adminMiddleware,deleteProblem);
+// Admin-only endpoints live together at the top because they change platform content.
+problemRouter.post("/create", adminMiddleware, createProblem);
+problemRouter.put("/update/:id", adminMiddleware, updateProblem);
+problemRouter.delete("/delete/:id", adminMiddleware, deleteProblem);
+problemRouter.delete("/cleanup", adminMiddleware, cleanupOrphanedData);
 
-
-//In this we just have to validate the user
-problemRouter.get("/user",authMiddleware,solvedProblemByUser);
-problemRouter.get("/problemById/:id",authMiddleware,getProblemById);
-problemRouter.get("/getAllProblems",authMiddleware,problemFetchAll);
-problemRouter.get("/submission/:id",authMiddleware,getSubmission);
+// User-facing reads come next. These power the actual solving experience in the app.
+problemRouter.get("/user", authMiddleware, solvedProblemByUser);
+problemRouter.get("/problemById/:id", authMiddleware, getProblemById);
+problemRouter.get("/getAllProblems", authMiddleware, problemFetchAll);
+problemRouter.get("/submission/:id", authMiddleware, getSubmission);
 
 export default problemRouter;

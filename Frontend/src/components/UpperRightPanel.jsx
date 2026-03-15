@@ -1,3 +1,5 @@
+// UpperRightPanel wraps Monaco so the main problem page does not have to care about editor setup details.
+// It handles language switching and keeps the editor laid out correctly inside resizable panels.
 import Editor from "@monaco-editor/react";
 import { useEffect, useRef } from "react";
 

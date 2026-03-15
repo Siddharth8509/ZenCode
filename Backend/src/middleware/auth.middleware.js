@@ -1,3 +1,5 @@
+// This middleware protects normal authenticated routes.
+// It verifies the cookie, checks Redis for logged-out tokens, and loads the current user.
 import redisClient from "../config/redis.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
