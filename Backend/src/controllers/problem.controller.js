@@ -1,84 +1,66 @@
-// Problem controller is the backend brain for authoring and browsing practice questions.
-// It handles admin CRUD, problem detail reads, and user progress summaries.
-import { getLanguageId, submitBatch, submitToken } from "../utils/problem.utils.js";
+import { getLanguageId, executeCodeAndEvaluate } from "../utils/problem.utils.js";
 import mongoose from "mongoose";
 import problem from "../model/problem.js";
 import user from "../model/user.js"
 import submission from "../model/submission.js";
 
-
+/**
+ * Validates and creates a new problem in the database.
+ * If a reference solution is provided, it is first evaluated against the
+ * visible test cases via Judge0 to guarantee accuracy before saving the problem.
+ */
 const createProblem = async (req, res) => {
     try {
         const {
             title, difficulty, tags, companies,
             description, examples, visibleTestCase,
             hiddenTestCase, initialCode,
-            referenceSolution, testCases, editorial
+            referenceSolution
         } = req.body;
 
-        // The admin form sends a friendly `testCases` array, so we normalize it into the shape the judge expects.
-        const finalVisibleTestCase = visibleTestCase || (testCases || []).map(tc => ({
-            input: tc.input,
-            output: (tc.expectedOutput || tc.output || "").trim()
-        }));
-        const finalHiddenTestCase = hiddenTestCase || finalVisibleTestCase;
-
-        // Reference solutions are treated as a safety net:
-        // if an admin includes them, we verify they really pass before saving the problem.
-        if (referenceSolution && referenceSolution.length > 0 && finalVisibleTestCase.length > 0) {
+        if (referenceSolution && referenceSolution.length > 0 && visibleTestCase && visibleTestCase.length > 0) {
             for (const { language, solution } of referenceSolution) {
                 const languageId = getLanguageId(language);
-                if (!languageId) {
-                    return res.status(400).send(`Unsupported reference solution language: ${language}`);
-                }
 
-                const submission = finalVisibleTestCase.map(({ input, output }) => ({
-                    source_code: solution,
-                    language_id: languageId,
-                    stdin: input,
-                    expected_output: (output || "").trim()
+                // We simulate the output.trim() behavior inside the helper, or we can format it here.
+                const formattedTestCases = visibleTestCase.map(({ input, output }) => ({
+                    input,
+                    output: output.trim() // 🔥 FIX 1
                 }));
 
-                const submitResult = await submitBatch(submission);
-                if (!submitResult?.length) {
-                    return res.status(500).send("Judge submission failed");
-                }
-
-                const tokens = submitResult.map(s => s.token);
-                const testResults = await submitToken(tokens);
+                const testResults = await executeCodeAndEvaluate(solution, languageId, formattedTestCases);
 
                 for (const test of testResults) {
-                    if (test.status_id === 3) continue;
-                    if (test.status_id === 4) return res.status(406).send("Wrong Answer");
-                    if (test.status_id === 5) return res.status(406).send("Time Limit Exceeded");
-                    if (test.status_id === 6) return res.status(406).send("Compilation Error");
+                    console.log({
+                        stdin: test.input,
+                        expected: test.expectedOutput,
+                        stdout: test.actualOutput,
+                        status: test.status
+                    });
+
+                    if (test.raw_status_id === 3) continue;
+                    if (test.raw_status_id === 4) return res.status(406).send("Wrong Answer");
+                    if (test.raw_status_id === 5) return res.status(406).send("Time Limit Exceeded");
+                    if (test.raw_status_id === 6) return res.status(406).send("Compilation Error");
+
                     return res.status(406).send("Runtime Error");
                 }
             }
         }
 
-        await problem.create({
-            title,
-            difficulty,
-            tags: Array.isArray(tags) ? tags : [tags],
-            companies: Array.isArray(companies) ? companies : (companies || "").split(",").map(c => c.trim()).filter(Boolean),
-            description,
-            examples,
-            visibleTestCase: finalVisibleTestCase,
-            hiddenTestCase: finalHiddenTestCase,
-            initialCode,
-            referenceSolution: referenceSolution || [],
-            editorial: editorial || "",
-            problemCreator: req.userId,
-        });
+        await problem.create({ ...req.body, problemCreator: req.userId });
         return res.status(201).send("Problem created successfully");
 
     } catch (error) {
         console.error(error);
-        res.status(500).send("Internal server error: " + error.message);
+        res.status(500).send("Internal server error");
     }
 };
 
+/**
+ * Fetches the full details of a specific problem by its ID.
+ * Used primarily for the main problem-solving page.
+ */
 const getProblemById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -96,7 +78,6 @@ const getProblemById = async (req, res) => {
 
         return res.status(200).json({
             _id: problemDoc._id,
-            problemId: problemDoc._id,
             title: problemDoc.title,
             description: problemDoc.description,
             examples: problemDoc.examples,
@@ -114,14 +95,17 @@ const getProblemById = async (req, res) => {
     }
 };
 
+/**
+ * Fetches a paginated list of problems for the catalog dashboard.
+ * Returns lightweight data (title, difficulty, tags) to keep the list fast.
+ */
 const problemFetchAll = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const problemlimit = 5;
+        const problemlimit = 15;
 
         const problemskip = (page - 1) * problemlimit;
 
-        // The problem list stays intentionally lean because the frontend only needs summary cards here.
         const problems = await problem.find({}).select("title _id difficulty tags ").skip(problemskip).limit(problemlimit);
 
         const totalProblems = await problem.countDocuments();
@@ -139,10 +123,14 @@ const problemFetchAll = async (req, res) => {
     }
 }
 
+/**
+ * Validates and updates an existing problem.
+ * Re-validates the reference solution via Judge0 if it or the test cases are modified.
+ */
 const updateProblem = async (req, res) => {
     const {
         title, difficulty, tags, companies,
-        discription, examples, visibleTestCase,
+        description, examples, visibleTestCase,
         hiddenTestCase, initialCode, problemCreator,
         referenceSolution
     } = req.body;
@@ -166,32 +154,20 @@ const updateProblem = async (req, res) => {
         if (referenceSolution && visibleTestCase) {
             for (const { language, solution } of referenceSolution) {
                 const languageId = getLanguageId(language);
-                if (!languageId) {
-                    return res.status(400).send(`Unsupported reference solution language: ${language}`);
-                }
 
-                const submission = visibleTestCase.map(({ input, output }) => ({
-                    source_code: solution,
-                    language_id: languageId,
-                    stdin: input,
-                    expected_output: output
-                }))
-
-                const submitResult = await submitBatch(submission);
-                const resultToken = submitResult.map((value) => value.token)
-                const testResults = await submitToken(resultToken);
+                const testResults = await executeCodeAndEvaluate(solution, languageId, visibleTestCase);
 
                 for (const test of testResults) {
-                    if (test.status_id === 3)
+                    if (test.raw_status_id === 3)
                         continue;
 
-                    if (test.status_id === 4)
+                    if (test.raw_status_id === 4)
                         return res.status(406).send("Wrong Answer");
 
-                    if (test.status_id === 5)
+                    if (test.raw_status_id === 5)
                         return res.status(406).send("Time Limit Exceeded");
 
-                    if (test.status_id === 6)
+                    if (test.raw_status_id === 6)
                         return res.status(406).send("Compilation Error");
 
                     return res.status(406).send("Runtime Error");
@@ -206,6 +182,10 @@ const updateProblem = async (req, res) => {
     }
 }
 
+/**
+ * Returns the list of problems that the authenticated user has successfully solved.
+ * Used for building statistics on the profile dashboard.
+ */
 const solvedProblemByUser = async (req, res) => {
     try {
         const userId = req.userId;
@@ -221,60 +201,17 @@ const solvedProblemByUser = async (req, res) => {
         if (!userData)
             return res.status(404).send("User not found");
 
-        const solvedCount = userData.problemSolved.length;
-        const totalProblems = await problem.countDocuments();
-        const progressPercent = totalProblems
-            ? Math.round((solvedCount / totalProblems) * 100)
-            : 0;
 
-        // Recent solves are built from submissions instead of `problemSolved`
-        // so we can keep the timestamps of when a question was last cleared.
-        const recentSolvedRaw = await submission.aggregate([
-            {
-                $match: {
-                    userId: new mongoose.Types.ObjectId(userId),
-                    status: "accepted"
-                }
-            },
-            { $sort: { createdAt: -1 } },
-            {
-                $group: {
-                    _id: "$problemId",
-                    solvedAt: { $first: "$createdAt" }
-                }
-            },
-            { $sort: { solvedAt: -1 } },
-            { $limit: 5 }
-        ]);
-
-        const recentSolvedProblemIds = recentSolvedRaw.map((entry) => entry._id);
-        const recentSolvedProblemDocs = await problem
-            .find({ _id: { $in: recentSolvedProblemIds } })
-            .select("title");
-
-        const titleByProblemId = new Map(
-            recentSolvedProblemDocs.map((doc) => [doc._id.toString(), doc.title || "Untitled Problem"])
-        );
-
-        const recentSolved = recentSolvedRaw.map((entry) => ({
-            problemId: entry._id.toString(),
-            title: titleByProblemId.get(entry._id.toString()) || "Untitled Problem",
-            solvedAt: entry.solvedAt
-        }));
-
-        return res.status(200).json({
-            solvedCount,
-            totalProblems,
-            progressPercent,
-            problems: userData.problemSolved,
-            recentSolved
-        });
+        return res.status(200).json({ solvedCount: userData.problemSolved.length, problems: userData.problemSolved });
     }
     catch (error) {
         return res.status(500).send("Failed to fetch data");
     }
 }
 
+/**
+ * Deletes a specific problem by ID (Admin only).
+ */
 const deleteProblem = async (req, res) => {
     try {
         const { id } = req.params;
@@ -282,7 +219,7 @@ const deleteProblem = async (req, res) => {
             return res.status(400).send("Please enter a valid id");
 
         if (!mongoose.Types.ObjectId.isValid(id))
-            return res.status(400).send("Invalid id")
+            res.status(400).send("Invalid id")
 
         const existingProblem = await problem.findById(id);
         if (!existingProblem)
@@ -296,26 +233,33 @@ const deleteProblem = async (req, res) => {
     }
 }
 
+/**
+ * Gets submission history for a specific problem for the currently logged in user.
+ */
 const getSubmission = async (req, res) => {
     try {
         const userId = req.userId;
         const problemId = req.params.id;
 
         if (!mongoose.Types.ObjectId.isValid(problemId)) {
-            return res.status(400).send("Invalid problemId");
+            return res.status(400).json({ message: "Invalid problemId" });
         }
 
-        const submissionsDone = await submission.find({ userId, problemId });
-        if (submissionsDone.length == 0)
-            return res.status(200).send("No submission for this problem");
+        const submissionsDone = await submission
+            .find({ userId, problemId })
+            .sort({ createdAt: -1 });
 
         return res.status(200).send(submissionsDone);
     }
     catch (err) {
-        res.status(500).json({ message: "Server error" });
+        return res.status(500).json({ message: "Server error" });
     }
 };
 
+/**
+ * Development utility to reset user progress and submission history.
+ * (Clears the DB of run history across all users)
+ */
 const cleanupOrphanedData = async (req, res) => {
     try {
         // Clear all users' problemSolved arrays

@@ -390,6 +390,7 @@ This file provides:
 - `getLanguageId(lang)` to translate frontend language keys into Judge0 language ids.
 - `submitBatch(submissionArray)` to send many submissions at once.
 - `submitToken(tokens)` to poll Judge0 until results are ready.
+- `executeCodeAndEvaluate(sourceCode, languageId, testCases)` to centralize the execution workflow (formatting, batch submission, token polling, and result aggregation) into a single, clean interface used by all controllers.
 
 Notable behavior:
 
