@@ -14,6 +14,8 @@ authRouter.post("/admin/register", adminMiddleware, adminRegister);
 authRouter.delete("/delete/:id", authMiddleware, deleteUser);
 authRouter.patch("/profile", authMiddleware, updateProfile);
 authRouter.post("/reset-password", authMiddleware, resetPassword);
+
+// Session restore: called once on app boot to rehydrate Redux auth state from cookie.
 authRouter.get("/check", authMiddleware, (req, res) => {
     const reply = {
         firstname: req.result.firstname,
@@ -24,8 +26,8 @@ authRouter.get("/check", authMiddleware, (req, res) => {
     };
     res.status(200).json({
         user: reply,
-        message: "User registered successfully"
+        message: "Authorized"
     });
 });
 
-export default authRouter; 
+export default authRouter;

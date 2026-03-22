@@ -89,7 +89,8 @@ const submitCode = async (req, res) => {
         submitedProblem.errorMessage = errorMessage;
         submitedProblem.status = problemStatus;
 
-        if (!userInfo.problemSolved.includes(problemData._id)) {
+        // Only mark as solved when all test cases pass.
+        if (problemStatus === "accepted" && !userInfo.problemSolved.includes(problemData._id)) {
             userInfo.problemSolved.push(problemData);
             await userInfo.save();
         }

@@ -7,7 +7,7 @@ import mongoose from "mongoose";
 import User from "../model/user.js";
 import redisClient from "../config/redis.js";
 import authValidate from "../utils/authValidator.js";
-import submission from "../model/submission.js"
+import submission from "../model/submission.js";
 import user from "../model/user.js";
 
 const registerUser = async (req, res) => {
@@ -22,7 +22,11 @@ const registerUser = async (req, res) => {
         const newUser = await User.create({ password: hashedPassword, ...data });
 
         // The frontend relies on this cookie-based session, so we mint the token right after signup.
-        const token = jwt.sign({ _id: newUser._id, emailId: emailId, role: newUser.role }, process.env.JWT_SECRET, { expiresIn: 60 * 60 });
+        const token = jwt.sign(
+            { _id: newUser._id, emailId: emailId, role: newUser.role },
+            process.env.JWT_SECRET,
+            { expiresIn: "1h" }
+        );
 
         const userData = await User.findOne({ emailId });
         const reply = {
@@ -31,7 +35,7 @@ const registerUser = async (req, res) => {
             lastname: userData.lastname,
             emailId: userData.emailId,
             role: userData.role
-        }
+        };
 
         res.cookie("token", token, {
             maxAge: 60 * 60 * 1000,
@@ -47,35 +51,36 @@ const registerUser = async (req, res) => {
     catch (error) {
         res.status(400).send(error.message);
     }
-}
+};
 
 const loginUser = async (req, res) => {
     try {
         const { emailId, password } = req.body;
 
-        if (!emailId)
-            throw new Error("Invalid credentials");
-        if (!password)
+        // Use a generic error message to avoid leaking whether the email exists.
+        if (!emailId || !password)
             throw new Error("Invalid credentials");
 
         const userData = await User.findOne({ emailId });
         if (!userData)
-            throw new Error("User doesn't exist");
+            throw new Error("Invalid credentials");
 
-        const realPassword = userData.password;
-
-        const verifyPassword = await bcrypt.compare(password, realPassword);
+        const verifyPassword = await bcrypt.compare(password, userData.password);
         if (!verifyPassword)
-            throw new Error("Enter a valid password");
+            throw new Error("Invalid credentials");
 
-        const token = jwt.sign({ _id: userData._id, emailId: emailId, role: userData.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign(
+            { _id: userData._id, emailId: emailId, role: userData.role },
+            process.env.JWT_SECRET,
+            { expiresIn: "1h" }
+        );
         const reply = {
             _id: userData._id,
             firstname: userData.firstname,
             lastname: userData.lastname,
             emailId: userData.emailId,
             role: userData.role
-        }
+        };
 
         res.cookie("token", token, {
             maxAge: 60 * 60 * 1000,
@@ -83,15 +88,15 @@ const loginUser = async (req, res) => {
             sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             secure: process.env.NODE_ENV === "production",
         });
-        res.status(202).json({
+        res.status(200).json({
             user: reply,
-            message: "User registered successfully"
+            message: "Login successful"
         });
     }
     catch (error) {
-        res.status(401).send(error.message)
+        res.status(401).json({ message: error.message });
     }
-}
+};
 
 const logoutUser = async (req, res) => {
     try {
@@ -100,9 +105,8 @@ const logoutUser = async (req, res) => {
             const payload = jwt.decode(token);
             if (payload && payload.exp) {
                 // Blacklisting lets us "invalidate" a stateless JWT until it naturally expires.
-                const expTime = payload.exp;
                 await redisClient.set(`token:${token}`, "Blocked");
-                await redisClient.expireAt(`token:${token}`, expTime);
+                await redisClient.expireAt(`token:${token}`, payload.exp);
             }
         }
     }
@@ -117,7 +121,7 @@ const logoutUser = async (req, res) => {
         });
         res.status(200).send("Logout successfully");
     }
-}
+};
 
 const adminRegister = async (req, res) => {
     try {
@@ -129,7 +133,11 @@ const adminRegister = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = await User.create({ password: hashedPassword, ...data });
 
-        const token = jwt.sign({ _id: newUser._id, emailId: emailId, role: newUser.role }, process.env.JWT_SECRET, { expiresIn: 60 * 60 });
+        const token = jwt.sign(
+            { _id: newUser._id, emailId: emailId, role: newUser.role },
+            process.env.JWT_SECRET,
+            { expiresIn: "1h" }
+        );
 
         res.cookie("token", token, {
             maxAge: 60 * 60 * 1000,
@@ -137,12 +145,12 @@ const adminRegister = async (req, res) => {
             sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             secure: process.env.NODE_ENV === "production",
         });
-        res.status(201).send("User created successfully!");
+        res.status(201).send("Admin created successfully!");
     }
     catch (error) {
         res.status(400).send(error.message);
     }
-}
+};
 
 const deleteUser = async (req, res) => {
     try {
@@ -155,18 +163,18 @@ const deleteUser = async (req, res) => {
 
         const userExist = await User.findById(id);
         if (!userExist)
-            return res.status(404).send("user does not exist");
+            return res.status(404).send("User does not exist");
 
         // Submissions are removed alongside the account so profile stats do not keep orphaned data around.
         await submission.deleteMany({ userId: id });
         await User.findByIdAndDelete(id);
 
-        return res.status(200).send("user deleted successfully");
+        return res.status(200).send("User deleted successfully");
     }
     catch (error) {
-        res.status(500).send("Unexpected error occured :" + error.message);
+        res.status(500).send("Unexpected error occurred: " + error.message);
     }
-}
+};
 
 const updateProfile = async (req, res) => {
     try {
@@ -199,7 +207,7 @@ const updateProfile = async (req, res) => {
     } catch (error) {
         res.status(500).send("Unexpected error occurred: " + error.message);
     }
-}
+};
 
 const resetPassword = async (req, res) => {
     try {
@@ -216,7 +224,7 @@ const resetPassword = async (req, res) => {
 
         const verifyPassword = await bcrypt.compare(oldPassword, userExist.password);
         if (!verifyPassword) {
-            return res.status(401).json({ error: "Incorrect old password" });
+            return res.status(401).json({ message: "Incorrect old password" });
         }
 
         const hashedNewPassword = await bcrypt.hash(newPassword, 10);
@@ -227,6 +235,6 @@ const resetPassword = async (req, res) => {
     } catch (error) {
         res.status(500).send("Unexpected error occurred: " + error.message);
     }
-}
+};
 
 export { registerUser, logoutUser, loginUser, adminRegister, deleteUser, updateProfile, resetPassword };

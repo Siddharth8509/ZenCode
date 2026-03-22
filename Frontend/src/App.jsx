@@ -13,6 +13,12 @@ import Adminpage from './pages/Adminpage';
 import Problempage from './pages/Problempage';
 import Profile from './pages/Profile';
 import BackendWakeScreen from './components/BackendWakeScreen';
+import { Generate } from './components/mock-interview/generate';
+import { Dashboard } from './pages/mock-interview/dashboard';
+import { CreateEditPage } from './pages/mock-interview/create-edit-page';
+import { MockLoadPage } from './pages/mock-interview/mock-load-page';
+import { MockInterviewPage } from './pages/mock-interview/mock-interview-page';
+import { Feedback } from './pages/mock-interview/feedback';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:3000").replace(/\/+$/, "");
 const API_HOSTNAME = (() => {
@@ -120,6 +126,14 @@ function App() {
         <Route path="/admin" element={isAuthenticated ? <Adminpage /> : <Navigate to="/login" />} />
         <Route path="/profile" element={isAuthenticated ? <Profile /> : <Navigate to="/login" />} />
         <Route path="/problem/:id" element={isAuthenticated ? <Problempage /> : <Navigate to="/login" />} />
+
+        <Route path="/mock-interview" element={isAuthenticated ? <Generate /> : <Navigate to="/login" />}>
+          <Route index element={<Dashboard />} />
+          <Route path="create" element={<CreateEditPage />} />
+          <Route path="interview/:interviewId" element={<MockLoadPage />} />
+          <Route path="interview/:interviewId/start" element={<MockInterviewPage />} />
+          <Route path="feedback/:interviewId" element={<Feedback />} />
+        </Route>
       </Routes>
     </div>
 

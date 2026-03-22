@@ -237,7 +237,7 @@ export default function Homepage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.383a14.406 14.406 0 0 1-3 0M14.25 18v-.192c0-.983.658-1.829 1.508-2.336a5.5 5.5 0 0 0 2.684-4.832c0-3.033-2.467-5.5-5.5-5.5s-5.5 2.467-5.5 5.5c0 2.05.992 3.864 2.684 4.832.85.507 1.508 1.353 1.508 2.336V18" />
                   </svg>
                 ),
-                link: "/mock-interviewer"
+                link: "/mock-interview"
               },
               {
                 title: "Smart Resume Maker",

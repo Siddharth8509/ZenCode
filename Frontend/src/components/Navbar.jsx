@@ -41,6 +41,11 @@ export default function Navbar() {
                         Problems
                     </Link>
                     {user && (
+                        <Link to="/mock-interview" className="text-neutral-300 hover:text-white font-medium transition-colors">
+                            Mock Interview
+                        </Link>
+                    )}
+                    {user && (
                         <Link to="/profile" className="text-neutral-300 hover:text-white font-medium transition-colors">
                             Profile
                         </Link>

@@ -1,7 +1,12 @@
 // This slice is the single source of truth for authentication state on the client.
 // Every auth-related screen reads from here instead of juggling its own session logic.
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import axiosClient from "./utils/axiosClient"; // use your configured axios instance
+import axiosClient from "./utils/axiosClient";
+
+// Helper: Backend sometimes sends plain-text errors and sometimes JSON {message}.
+// This ensures we always extract a readable string regardless of response format.
+const extractError = (error, fallback) =>
+  error.response?.data?.message || error.response?.data || fallback;
 
 // Signup and login both return the user payload, so the UI can treat them as "session established".
 export const registerUser = createAsyncThunk(
@@ -11,9 +16,7 @@ export const registerUser = createAsyncThunk(
       const { data } = await axiosClient.post("/user/register", userData);
       return data.user;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Registration failed"
-      );
+      return rejectWithValue(extractError(error, "Registration failed"));
     }
   }
 );
@@ -25,9 +28,7 @@ export const loginUser = createAsyncThunk(
       const { data } = await axiosClient.post("/user/login", credentials);
       return data.user;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Login failed"
-      );
+      return rejectWithValue(extractError(error, "Login failed"));
     }
   }
 );
@@ -40,7 +41,7 @@ export const checkAuth = createAsyncThunk(
       const { data } = await axiosClient.get("/user/check");
       return data.user;
     } catch (error) {
-      return rejectWithValue(null); // not authenticated
+      return rejectWithValue(null); // not authenticated — expected on first visit
     }
   }
 );
@@ -64,9 +65,7 @@ export const updateProfile = createAsyncThunk(
       const { data } = await axiosClient.patch("/user/profile", profileData);
       return data.user;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || error.response?.data || "Profile update failed"
-      );
+      return rejectWithValue(extractError(error, "Profile update failed"));
     }
   }
 );
@@ -78,9 +77,7 @@ export const resetPassword = createAsyncThunk(
       const { data } = await axiosClient.post("/user/reset-password", passwordData);
       return data.message;
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.error || error.response?.data || "Password reset failed"
-      );
+      return rejectWithValue(extractError(error, "Password reset failed"));
     }
   }
 );
@@ -172,9 +169,22 @@ const authSlice = createSlice({
       .addCase(updateProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+
+      // RESET PASSWORD
+      .addCase(resetPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(resetPassword.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
-
 
 export default authSlice.reducer;
