@@ -21,11 +21,12 @@ const AptitudePlatform = ({ isMobileOpen, setIsMobileOpen }) => {
     const fetchQuestions = async () => {
       setLoading(true);
       try {
-        let url = `/aptitude/questions?`;
-        if (activeTopic) url += `topic=${activeTopic}&`;
-        if (selectedCompany) url += `company=${selectedCompany}`;
+        const params = new URLSearchParams();
+        if (activeTopic) params.set("topic", activeTopic);
+        if (selectedCompany) params.set("company", selectedCompany);
+        const query = params.toString();
 
-        const res = await axios.get(url);
+        const res = await axios.get(`/aptitude/questions${query ? `?${query}` : ""}`);
         setQuestions(res.data);
       } catch (err) {
         console.error("Fetch Error:", err);
@@ -44,13 +45,22 @@ const AptitudePlatform = ({ isMobileOpen, setIsMobileOpen }) => {
     setGeneratingAI(true);
     const toastId = toast.loading("Gemini is crafting questions for you...");
     try {
-      const res = await axios.get(`/aptitude/gemini/generate?topic=${activeTopic}`);
+      const res = await axios.post('/aptitude/gemini/generate', { topic: activeTopic });
+      const generatedQuestions = Array.isArray(res.data) ? res.data : [];
+      if (generatedQuestions.length === 0) {
+        throw new Error("No questions were returned by the AI service.");
+      }
       // The backend returns saved questions with _id
-      setQuestions(prev => [...res.data, ...prev]);
-      toast.success("3 New AI questions added!", { id: toastId });
+      setQuestions(prev => [...generatedQuestions, ...prev]);
+      toast.success(`${generatedQuestions.length} new AI questions added!`, { id: toastId });
     } catch (err) {
       console.error(err);
-      toast.error("Failed to generate questions. Check console.", { id: toastId });
+      const message =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        "Failed to generate questions. Please try again.";
+      toast.error(message, { id: toastId });
     } finally {
       setGeneratingAI(false);
     }

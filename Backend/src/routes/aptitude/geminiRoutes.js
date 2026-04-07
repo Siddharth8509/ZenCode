@@ -3,6 +3,7 @@ import { generateQuestions } from '../../controllers/aptitude/geminiController.j
 
 const router = express.Router();
 
+router.post('/generate', generateQuestions);
 router.get('/generate', generateQuestions);
 
 export default router;
