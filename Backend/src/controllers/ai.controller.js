@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 
 dotenv.config({ path: fileURLToPath(new URL("../../.env", import.meta.url)) });
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY_AI_MOCK || process.env.GOOGLE_API_KEY || "";
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
 const SYSTEM_INSTRUCTION = `You are ZenCode AI, a strict DSA (Data Structures and Algorithms) instructor.

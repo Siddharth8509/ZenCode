@@ -121,18 +121,20 @@ export const Feedback = () => {
       </div>
 
       {/* Congratulations banner */}
-      <div className="glass-panel rounded-2xl p-6 border border-white/5 flex flex-col md:flex-row items-start md:items-center gap-6 animate-pop-in">
-        <div className="p-4 rounded-2xl bg-red-600/10 border border-red-500/20 shrink-0">
-          <TrophyIcon className="w-10 h-10 text-red-400" />
+      <div className="glass-panel rounded-[2rem] p-8 border border-white/10 flex flex-col md:flex-row items-start md:items-center gap-6 shadow-xl hover:shadow-[0_0_30px_rgba(249,115,22,0.15)] transition-all animate-pop-in">
+        <div className="p-5 rounded-2xl bg-orange-500/10 border border-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.2)] shrink-0">
+          <TrophyIcon className="w-12 h-12 text-orange-400" />
         </div>
         <div className="flex-1">
           <Headings title="Great job! 🎉" description="Your personalized AI feedback is ready. Review your answers, see the expected responses, and track areas to improve." />
-          <div className="mt-4 flex items-center gap-3">
-            <span className="text-sm text-neutral-400">Overall Score</span>
-            <span className={cn("text-3xl font-bold font-mono", ratingColor)}>
-              {overAllRating}
-            </span>
-            <span className="text-neutral-500 text-sm">/ 10</span>
+          <div className="mt-6 flex items-center gap-4">
+            <span className="text-sm font-bold text-neutral-400 uppercase tracking-widest">Overall Score</span>
+            <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+              <span className={cn("text-3xl font-black font-mono", ratingColor)}>
+                {overAllRating}
+              </span>
+              <span className="text-neutral-500 text-sm font-bold ml-1">/ 10</span>
+            </div>
           </div>
         </div>
       </div>
@@ -145,26 +147,26 @@ export const Feedback = () => {
 
       {/* Accordion */}
       {feedbacks.length > 0 ? (
-        <Accordion type="single" collapsible className="space-y-3">
+        <Accordion type="single" collapsible className="space-y-4">
           {feedbacks.map((feed, idx) => (
             <AccordionItem
               key={feed.id}
               value={feed.id}
               className={cn(
-                "glass-panel rounded-xl border overflow-hidden transition-all duration-300",
+                "glass-panel rounded-2xl border overflow-hidden transition-all duration-300",
                 activeFeed === feed.id
-                  ? "border-red-500/30 shadow-lg shadow-red-900/10"
-                  : "border-white/5 hover:border-white/10"
+                  ? "border-orange-500/40 shadow-lg shadow-orange-900/20 bg-white/5"
+                  : "border-white/10 hover:border-white/20 hover:bg-white-[0.02]"
               )}
             >
               <AccordionTrigger
                 onClick={() => setActiveFeed(feed.id)}
-                className="px-5 py-4 flex items-center gap-3 hover:no-underline text-left"
+                className="px-6 py-5 flex items-center gap-4 hover:no-underline text-left"
               >
-                <span className="flex items-center justify-center w-7 h-7 rounded-full bg-neutral-800 text-neutral-400 text-xs font-bold shrink-0">
+                <span className={cn("flex items-center justify-center w-8 h-8 rounded-xl font-black shrink-0 transition-colors", activeFeed === feed.id ? "bg-orange-500/20 text-orange-400 border border-orange-500/30" : "bg-neutral-800 text-neutral-400 text-xs border border-white/5")}>
                   {idx + 1}
                 </span>
-                <span className="flex-1 text-sm text-neutral-200 font-medium leading-relaxed">
+                <span className="flex-1 text-[15px] text-neutral-200 font-semibold leading-relaxed">
                   {feed.question}
                 </span>
                 <RatingBar rating={feed.rating} />
@@ -190,21 +192,23 @@ export const Feedback = () => {
                 </div>
 
                 {/* AI Feedback */}
-                <div className="p-4 rounded-xl bg-red-950/20 border border-red-500/20 space-y-2">
+                <div className="p-5 rounded-xl bg-orange-500/10 border border-orange-500/20 space-y-2">
                   <div className="flex items-center gap-2">
-                    <StarIcon className="w-4 h-4 text-red-400 shrink-0" />
-                    <span className="text-sm font-semibold text-red-300">AI Feedback</span>
+                    <StarIcon className="w-5 h-5 text-orange-400 shrink-0" />
+                    <span className="text-sm font-bold text-orange-300 uppercase tracking-widest">AI Feedback</span>
                   </div>
-                  <p className="text-sm text-neutral-300 leading-relaxed">{feed.feedback}</p>
+                  <p className="text-sm text-neutral-200 leading-relaxed font-medium">{feed.feedback}</p>
                 </div>
               </AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
       ) : (
-        <div className="glass-panel rounded-xl p-8 border border-white/5 flex flex-col items-center gap-3 text-center">
-          <ChevronDownIcon className="w-8 h-8 text-neutral-500" />
-          <p className="text-neutral-400 text-sm">No feedback recorded yet. Complete the interview first.</p>
+        <div className="glass-panel rounded-[2rem] p-12 border border-white/10 flex flex-col items-center gap-4 text-center">
+          <div className="p-4 rounded-full bg-white/5 border border-white/10">
+            <ChevronDownIcon className="w-10 h-10 text-neutral-500" />
+          </div>
+          <p className="text-neutral-400 text-sm font-medium max-w-sm">No feedback recorded yet. Complete the interview first.</p>
         </div>
       )}
     </div>

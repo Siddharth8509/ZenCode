@@ -80,9 +80,9 @@ export const QuestionSection = ({ questions }) => {
               key={tab.question}
               value={tab.question}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200",
-                "data-[state=active]:bg-red-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-red-900/30",
-                "data-[state=inactive]:text-neutral-500 data-[state=inactive]:hover:text-neutral-300 data-[state=inactive]:hover:bg-neutral-800"
+                "px-3 py-1.5 rounded-lg text-xs font-black transition-all duration-300",
+                "data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-400 data-[state=active]:to-amber-500 data-[state=active]:text-black data-[state=active]:shadow-[0_0_15px_rgba(245,158,11,0.4)]",
+                "data-[state=inactive]:text-neutral-500 data-[state=inactive]:hover:text-white data-[state=inactive]:hover:bg-white/10"
               )}
             >
               Q{i + 1}
@@ -96,8 +96,8 @@ export const QuestionSection = ({ questions }) => {
             {/* Question card */}
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="px-2.5 py-1 rounded-full bg-red-600/10 border border-red-500/20 text-xs font-bold text-red-400">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-[10px] uppercase tracking-widest font-black text-orange-400">
                     Question {i + 1} of {questions.length}
                   </span>
                   {i === currentIndex && (
@@ -125,7 +125,7 @@ export const QuestionSection = ({ questions }) => {
                 buttonVariant="outline"
                 buttonClassName={cn(
                   "shrink-0",
-                  isPlaying ? "text-red-400 border-red-500/40" : "text-neutral-400"
+                  isPlaying ? "text-orange-400 border-orange-500/40 bg-orange-500/10" : "text-neutral-400 hover:text-white hover:bg-white/10"
                 )}
                 onClick={() => handlePlayQuestion(tab.question)}
               />

@@ -43,8 +43,8 @@ const formSchema = z.object({
 });
 
 const FieldIcon = ({ icon: Icon, label }) => (
-  <div className="flex items-center gap-2 text-neutral-300 text-sm font-medium">
-    <Icon className="w-4 h-4 text-red-400" />
+  <div className="flex items-center gap-2 text-neutral-300 text-sm font-bold tracking-wide">
+    <Icon className="w-4 h-4 text-orange-400" />
     {label}
   </div>
 );
@@ -158,13 +158,13 @@ export const FormMockInterview = ({ initialData }) => {
       <div className="flex items-center justify-between w-full">
         <Headings title={title} isSubHeading />
         {initialData && (
-          <button className="p-2 rounded-lg bg-red-950/20 border border-red-500/20 hover:bg-red-950/40 text-red-400 hover:text-red-300 transition-all">
+          <button className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-all">
             <TrashIcon className="w-4 h-4" />
           </button>
         )}
       </div>
 
-      <div className="h-px bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-orange-500/20 to-transparent" />
 
       <FormProvider {...form}>
         <form
@@ -181,11 +181,11 @@ export const FormMockInterview = ({ initialData }) => {
                   <FormLabel>
                     <FieldIcon icon={BriefcaseIcon} label="Job Role / Position" />
                   </FormLabel>
-                  <FormMessage className="text-xs text-red-400" />
+                  <FormMessage className="text-xs text-red-400 font-bold" />
                 </div>
                 <FormControl>
                   <Input
-                    className="h-12 bg-neutral-900 border-neutral-800 text-white placeholder:text-neutral-500 focus:border-red-500/50 focus:ring-red-500/20 rounded-xl"
+                    className="h-12 bg-white/5 border-white/10 text-white placeholder:text-neutral-600 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 rounded-xl transition-all"
                     disabled={loading}
                     placeholder="e.g. Full Stack Developer"
                     {...field}
@@ -206,11 +206,11 @@ export const FormMockInterview = ({ initialData }) => {
                   <FormLabel>
                     <FieldIcon icon={DocumentTextIcon} label="Job Description" />
                   </FormLabel>
-                  <FormMessage className="text-xs text-red-400" />
+                  <FormMessage className="text-xs text-red-400 font-bold" />
                 </div>
                 <FormControl>
                   <Textarea
-                    className="min-h-[100px] bg-neutral-900 border-neutral-800 text-white placeholder:text-neutral-500 focus:border-red-500/50 focus:ring-red-500/20 rounded-xl resize-none"
+                    className="min-h-[100px] bg-white/5 border-white/10 text-white placeholder:text-neutral-600 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 rounded-xl resize-none transition-all"
                     disabled={loading}
                     placeholder="e.g. Building scalable web applications using React and Node.js..."
                     {...field}
@@ -231,12 +231,12 @@ export const FormMockInterview = ({ initialData }) => {
                   <FormLabel>
                     <FieldIcon icon={ClockIcon} label="Years of Experience" />
                   </FormLabel>
-                  <FormMessage className="text-xs text-red-400" />
+                  <FormMessage className="text-xs text-red-400 font-bold" />
                 </div>
                 <FormControl>
                   <Input
                     type="number"
-                    className="h-12 bg-neutral-900 border-neutral-800 text-white placeholder:text-neutral-500 focus:border-red-500/50 focus:ring-red-500/20 rounded-xl"
+                    className="h-12 bg-white/5 border-white/10 text-white placeholder:text-neutral-600 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 rounded-xl transition-all"
                     disabled={loading}
                     placeholder="e.g. 3"
                     {...field}
@@ -257,11 +257,11 @@ export const FormMockInterview = ({ initialData }) => {
                   <FormLabel>
                     <FieldIcon icon={CodeBracketIcon} label="Tech Stacks" />
                   </FormLabel>
-                  <FormMessage className="text-xs text-red-400" />
+                  <FormMessage className="text-xs text-red-400 font-bold" />
                 </div>
                 <FormControl>
                   <Textarea
-                    className="min-h-[80px] bg-neutral-900 border-neutral-800 text-white placeholder:text-neutral-500 focus:border-red-500/50 focus:ring-red-500/20 rounded-xl resize-none"
+                    className="min-h-[80px] bg-white/5 border-white/10 text-white placeholder:text-neutral-600 focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/50 rounded-xl resize-none transition-all"
                     disabled={loading}
                     placeholder="e.g. React, TypeScript, Node.js, MongoDB..."
                     {...field}
@@ -277,7 +277,7 @@ export const FormMockInterview = ({ initialData }) => {
             <button
               type="reset"
               disabled={isSubmitting || loading}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium border border-neutral-700 bg-neutral-900 text-neutral-300 hover:bg-neutral-800 hover:border-neutral-600 transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold border border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10 hover:border-white/20 transition-all disabled:opacity-50"
             >
               <ArrowPathIcon className="w-4 h-4" />
               Reset
@@ -285,7 +285,7 @@ export const FormMockInterview = ({ initialData }) => {
             <button
               type="submit"
               disabled={isSubmitting || !isValid || loading}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold bg-red-600 hover:bg-red-700 text-white transition-all shadow-md shadow-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-8 py-2.5 rounded-xl text-sm font-black bg-gradient-to-r from-orange-400 to-amber-500 hover:from-orange-500 hover:to-amber-600 text-black transition-all shadow-[0_0_15px_rgba(245,158,11,0.4)] disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5"
             >
               {loading ? (
                 <>

@@ -20,6 +20,20 @@ import { MockLoadPage } from './pages/mock-interview/mock-load-page';
 import { MockInterviewPage } from './pages/mock-interview/mock-interview-page';
 import { Feedback } from './pages/mock-interview/feedback';
 
+// Aptitude Imports
+import AptitudeHome from './pages/aptitude/pages/Home';
+import AptitudePlatform from './pages/aptitude/pages/AptitudePlatform';
+import QuestionDetail from './pages/aptitude/pages/QuestionDetail';
+import MockPapers from './pages/aptitude/pages/MockPapers';
+import Learn from './pages/aptitude/pages/Learn';
+import AdminDashboardAptitude from './pages/aptitude/admin/AdminDashboard';
+import AdminUploadAptitude from './pages/aptitude/admin/AdminUpload';
+import AdminEditAptitude from './pages/aptitude/admin/AdminEdit';
+import AddLecture from './pages/aptitude/admin/AddLecture';
+import AdminPdfUpload from './pages/aptitude/admin/AdminPdfUpload';
+import AdminPdfEdit from './pages/aptitude/admin/AdminPdfEdit';
+import StudentDashboard from './pages/aptitude/components/StudentDashboard';
+
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:3000").replace(/\/+$/, "");
 const API_HOSTNAME = (() => {
   try {
@@ -133,6 +147,24 @@ function App() {
           <Route path="interview/:interviewId" element={<MockLoadPage />} />
           <Route path="interview/:interviewId/start" element={<MockInterviewPage />} />
           <Route path="feedback/:interviewId" element={<Feedback />} />
+        </Route>
+
+        {/* Aptitude Routes */}
+        <Route path="/aptitude">
+          <Route index element={isAuthenticated ? <AptitudeHome /> : <Navigate to="/login" />} />
+          <Route path="platform" element={isAuthenticated ? <AptitudePlatform /> : <Navigate to="/login" />} />
+          <Route path="question/:id" element={isAuthenticated ? <QuestionDetail /> : <Navigate to="/login" />} />
+          <Route path="mock" element={isAuthenticated ? <MockPapers /> : <Navigate to="/login" />} />
+          <Route path="learn/:courseType" element={isAuthenticated ? <Learn /> : <Navigate to="/login" />} />
+          <Route path="learn" element={<Navigate to="/aptitude/learn/aptitude" replace />} />
+          <Route path="dashboard" element={isAuthenticated ? <StudentDashboard /> : <Navigate to="/login" />} />
+          
+          <Route path="admin" element={isAuthenticated ? <AdminDashboardAptitude /> : <Navigate to="/login" />} />
+          <Route path="admin/add" element={isAuthenticated ? <AdminUploadAptitude /> : <Navigate to="/login" />} />
+          <Route path="admin/edit/:id" element={isAuthenticated ? <AdminEditAptitude /> : <Navigate to="/login" />} />
+          <Route path="admin/add-lecture" element={isAuthenticated ? <AddLecture /> : <Navigate to="/login" />} />
+          <Route path="admin/upload-pdf" element={isAuthenticated ? <AdminPdfUpload /> : <Navigate to="/login" />} />
+          <Route path="admin/edit-pdf/:id" element={isAuthenticated ? <AdminPdfEdit /> : <Navigate to="/login" />} />
         </Route>
       </Routes>
     </div>

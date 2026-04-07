@@ -46,6 +46,11 @@ export default function Navbar() {
                         </Link>
                     )}
                     {user && (
+                        <Link to="/aptitude" className="text-neutral-300 hover:text-white font-medium transition-colors">
+                            Aptitude
+                        </Link>
+                    )}
+                    {user && (
                         <Link to="/profile" className="text-neutral-300 hover:text-white font-medium transition-colors">
                             Profile
                         </Link>

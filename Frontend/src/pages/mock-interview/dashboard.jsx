@@ -69,8 +69,8 @@ export const Dashboard = () => {
       {/* Header */}
       <div className="flex w-full items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-red-600/10 border border-red-500/20">
-            <MicrophoneIcon className="w-6 h-6 text-red-400" />
+          <div className="p-3 rounded-2xl bg-orange-500/10 border border-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.1)]">
+            <MicrophoneIcon className="w-7 h-7 text-orange-400" />
           </div>
           <Headings
             title="Mock Interviews"
@@ -79,18 +79,18 @@ export const Dashboard = () => {
         </div>
 
         <Link to="/mock-interview/create">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-all duration-200 shadow-md shadow-red-900/30 hover:shadow-red-900/50 animate-pulse-soft">
-            <PlusIcon className="w-4 h-4" />
+          <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-orange-400 to-amber-500 hover:from-orange-500 hover:to-amber-600 text-black text-sm font-black transition-all duration-300 shadow-[0_0_15px_rgba(245,158,11,0.4)] hover:shadow-[0_0_25px_rgba(245,158,11,0.6)] transform hover:-translate-y-0.5 animate-pulse-soft">
+            <PlusIcon className="w-5 h-5" />
             New Interview
           </button>
         </Link>
       </div>
 
       {/* Divider */}
-      <div className="h-px bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-orange-500/20 to-transparent" />
 
       {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
           Array.from({ length: 6 }).map((_, index) => <SkeletonCard key={index} />)
         ) : interviews.length > 0 ? (
@@ -98,20 +98,20 @@ export const Dashboard = () => {
             <InterviewPin key={interview.id} interview={interview} />
           ))
         ) : (
-          <div className="col-span-3 flex flex-col items-center justify-center h-72 gap-4 animate-rise">
-            <div className="p-6 rounded-2xl glass-panel border border-white/5 flex flex-col items-center gap-4 max-w-sm w-full text-center">
-              <div className="p-4 rounded-full bg-red-600/10 border border-red-500/20">
-                <SparklesIcon className="w-8 h-8 text-red-400" />
+          <div className="col-span-3 flex flex-col items-center justify-center h-72 gap-4 animate-rise mt-8">
+            <div className="p-8 rounded-[2rem] glass-panel border border-white/10 flex flex-col items-center gap-4 max-w-sm w-full text-center shadow-lg transition-transform hover:-translate-y-1">
+              <div className="p-4 rounded-2xl bg-orange-500/10 border border-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.2)]">
+                <SparklesIcon className="w-10 h-10 text-orange-400" />
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white">No interviews yet</h3>
-                <p className="text-sm text-neutral-400 mt-1">
+              <div className="space-y-1">
+                <h3 className="text-xl font-black text-white">No interviews yet</h3>
+                <p className="text-sm text-neutral-400">
                   Create your first AI mock interview and start practicing today.
                 </p>
               </div>
-              <Link to="/mock-interview/create" className="w-full">
-                <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-all">
-                  <PlusIcon className="w-4 h-4" />
+              <Link to="/mock-interview/create" className="w-full mt-2">
+                <button className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-orange-500/20 to-amber-500/20 hover:bg-orange-500 text-orange-400 hover:text-black border border-orange-500/30 text-sm font-bold transition-all shadow-[0_0_10px_rgba(245,158,11,0.2)] hover:shadow-[0_0_20px_rgba(245,158,11,0.5)]">
+                  <PlusIcon className="w-5 h-5" />
                   Create Interview
                 </button>
               </Link>

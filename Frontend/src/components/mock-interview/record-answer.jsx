@@ -205,15 +205,15 @@ export const RecordAnswer = ({
         loading={loading} />
       
 
-      <div className="w-full h-[400px] md:w-96 flex flex-col items-center justify-center border border-neutral-800 p-4 bg-neutral-900 rounded-md">
+      <div className="w-full h-[400px] md:w-96 flex flex-col items-center justify-center p-2 glass-panel rounded-[2rem] border border-white/10 shadow-[0_0_30px_rgba(249,115,22,0.1)] relative overflow-hidden group">
+        <div className="absolute inset-0 bg-gradient-to-t from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-0 pointer-events-none" />
         {isWebCam ?
         <WebCam
           onUserMedia={() => setIsWebCam(true)}
           onUserMediaError={() => setIsWebCam(false)}
-          className="w-full h-full object-cover rounded-md" /> :
+          className="w-full h-full object-cover rounded-[1.5rem] relative z-10" /> :
 
-
-        <WebcamIcon className="min-w-24 min-h-24 text-muted-foreground" />
+        <WebcamIcon className="w-24 h-24 text-white/20 relative z-10" />
         }
       </div>
 
@@ -260,11 +260,13 @@ export const RecordAnswer = ({
         
       </div>
 
-      <div className="w-full mt-4 p-4 border border-neutral-800 rounded-md bg-neutral-900">
-        <h2 className="text-lg font-semibold text-white">Your Answer:</h2>
+      <div className="w-full mt-6 p-6 glass-panel rounded-2xl border border-white/10 space-y-3">
+        <h2 className="text-sm font-black uppercase tracking-widest text-orange-400 flex items-center gap-2">
+           Live Transcription
+        </h2>
 
-        <p className="text-sm mt-2 text-neutral-300 whitespace-normal">
-          {userAnswer || "Start recording to see your answer here"}
+        <p className="text-[15px] text-neutral-300 leading-relaxed font-medium">
+          {userAnswer || "Start recording to see your answer here..."}
         </p>
 
         {interimResult &&
