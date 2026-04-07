@@ -9,7 +9,14 @@ const GEMINI_MODEL = process.env.GEMINI_APTITUDE_MODEL || process.env.GEMINI_MOD
 const DIFFICULTIES = ["Easy", "Medium", "Hard"];
 
 function getGeminiApiKey() {
-    return process.env.GEMINI_API_KEY_APTITUDE || process.env.GEMINI_API_KEY_AI_MOCK || process.env.GOOGLE_API_KEY || "";
+    return (
+        process.env.GEMINI_API_KEY_APTITUDE ||
+        process.env.GEMINI_API_KEY ||
+        process.env.GEMINI_API_KEY_AI_MOCK ||
+        process.env.GOOGLE_API_KEY ||
+        process.env.VITE_GEMINI_API_KEY ||
+        ""
+    );
 }
 
 function parseGeminiJson(text) {
@@ -32,18 +39,79 @@ function parseGeminiJson(text) {
     }
 }
 
+function getQuestionList(payload) {
+    if (Array.isArray(payload)) return payload;
+
+    if (payload && typeof payload === "object") {
+        for (const key of ["questions", "data", "items", "results"]) {
+            if (Array.isArray(payload[key])) return payload[key];
+        }
+    }
+
+    throw new Error("Gemini returned an invalid question list.");
+}
+
+function stringifyValue(value) {
+    if (value === null || value === undefined) return "";
+    if (typeof value === "string") return value.trim();
+    if (typeof value === "number" || typeof value === "boolean") return String(value).trim();
+
+    if (typeof value === "object") {
+        return String(value.text || value.value || value.option || value.label || value.answer || "").trim();
+    }
+
+    return "";
+}
+
+function normalizeOptions(rawOptions) {
+    const optionSource = Array.isArray(rawOptions)
+        ? rawOptions
+        : rawOptions && typeof rawOptions === "object"
+            ? Object.values(rawOptions)
+            : [];
+
+    return optionSource
+        .map((option) => stringifyValue(option).replace(/^(?:option\s*)?[A-D][).:-]\s*/i, "").trim())
+        .filter(Boolean)
+        .slice(0, 4);
+}
+
+function normalizeDifficulty(rawDifficulty, index) {
+    const requestedDifficulty = stringifyValue(rawDifficulty).toLowerCase();
+    return DIFFICULTIES.find((difficulty) => difficulty.toLowerCase() === requestedDifficulty) || DIFFICULTIES[index] || "Medium";
+}
+
+function resolveCorrectAnswer(rawAnswer, options) {
+    const answer = stringifyValue(rawAnswer);
+    if (!answer) return "";
+
+    const exactMatch = options.find((option) => option === answer);
+    if (exactMatch) return exactMatch;
+
+    const caseInsensitiveMatch = options.find((option) => option.toLowerCase() === answer.toLowerCase());
+    if (caseInsensitiveMatch) return caseInsensitiveMatch;
+
+    const letterMatch = answer.match(/^(?:option\s*)?([A-D])(?:[).:-])?$/i);
+    if (letterMatch) {
+        return options[letterMatch[1].toUpperCase().charCodeAt(0) - 65] || "";
+    }
+
+    const strippedAnswer = answer.replace(/^(?:option\s*)?[A-D][).:-]\s*/i, "").trim();
+    return options.find((option) => option.toLowerCase() === strippedAnswer.toLowerCase()) || "";
+}
+
 function normalizeQuestions(questionsData, topic) {
-    if (!Array.isArray(questionsData) || questionsData.length === 0) {
+    const questionList = getQuestionList(questionsData);
+
+    if (questionList.length === 0) {
         throw new Error("Gemini returned an invalid question list.");
     }
 
-    return questionsData.slice(0, 3).map((question, index) => {
-        const questionText = String(question?.questionText || "").trim();
-        const options = Array.isArray(question?.options)
-            ? question.options.map((option) => String(option).trim()).filter(Boolean)
-            : [];
-        const correctAnswer = String(question?.correctAnswer || "").trim();
-        const solution = String(question?.solution || "").trim();
+    return questionList.slice(0, 3).map((question, index) => {
+        const questionText = stringifyValue(question?.questionText || question?.question || question?.prompt || question?.text);
+        const options = normalizeOptions(question?.options || question?.choices || question?.answers);
+        const correctAnswer = resolveCorrectAnswer(question?.correctAnswer || question?.answer || question?.correctOption, options);
+        const solution = stringifyValue(question?.solution || question?.explanation || question?.rationale);
 
         if (!questionText || options.length !== 4 || !correctAnswer || !solution) {
             throw new Error("Gemini returned an incomplete question.");
@@ -58,7 +126,7 @@ function normalizeQuestions(questionsData, topic) {
             options,
             correctAnswer,
             category: "Aptitude",
-            difficulty: DIFFICULTIES.includes(question?.difficulty) ? question.difficulty : DIFFICULTIES[index] || "Medium",
+            difficulty: normalizeDifficulty(question?.difficulty, index),
             topic,
             solution,
         };
@@ -75,7 +143,7 @@ export const generateQuestions = async (req, res) => {
     const apiKey = getGeminiApiKey();
     if (!apiKey) {
         return res.status(503).json({
-            message: "AI question generation is not configured on the backend. Add GEMINI_API_KEY_APTITUDE, GEMINI_API_KEY_AI_MOCK, or GOOGLE_API_KEY in production.",
+            message: "AI question generation is not configured on the backend. Add GEMINI_API_KEY_APTITUDE or GEMINI_API_KEY in production.",
         });
     }
 
@@ -86,6 +154,8 @@ export const generateQuestions = async (req, res) => {
             model: GEMINI_MODEL,
             generationConfig: {
                 responseMimeType: "application/json",
+                temperature: 0.7,
+                maxOutputTokens: 4096,
             },
         });
 
@@ -97,13 +167,14 @@ export const generateQuestions = async (req, res) => {
             {
                 "questionText": "string",
                 "options": ["string", "string", "string", "string"],
-                "correctAnswer": "string",
+                "correctAnswer": "full option string, not A/B/C/D",
                 "category": "Aptitude",
                 "difficulty": "Easy" | "Medium" | "Hard",
                 "topic": "${topic}",
                 "solution": "string"
             }
             Ensure correctAnswer is EXACTLY one of the options.
+            All values must be plain text strings. Do not return objects, diagrams, Mermaid, HTML, or code.
             Do not include any other text or markdown formatting except the JSON array.
         `;
 

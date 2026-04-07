@@ -9,6 +9,59 @@ import EmptyState from '../components/EmptyState';
 import Navbar from '../components/Navbar';
 import { SparklesIcon } from '@heroicons/react/24/solid';
 
+const toText = (value, fallback = "") => {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === "string") return value.trim() || fallback;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+
+  if (typeof value === "object") {
+    const nestedValue = value.text || value.value || value.option || value.label || value.answer;
+    return nestedValue ? toText(nestedValue, fallback) : fallback;
+  }
+
+  return fallback;
+};
+
+const normalizeOptions = (options) => {
+  const optionSource = Array.isArray(options)
+    ? options
+    : options && typeof options === "object"
+      ? Object.values(options)
+      : [];
+
+  return optionSource.map((option) => toText(option)).filter(Boolean);
+};
+
+const normalizeQuestion = (question) => {
+  const options = normalizeOptions(question?.options || question?.choices || question?.answers);
+  const difficulty = toText(question?.difficulty, "Medium");
+
+  return {
+    ...(question || {}),
+    questionText: toText(question?.questionText || question?.question || question?.prompt || question?.text, "Untitled question"),
+    options,
+    correctAnswer: toText(question?.correctAnswer || question?.answer || question?.correctOption, options[0] || ""),
+    category: toText(question?.category, "Aptitude"),
+    difficulty: ["Easy", "Medium", "Hard"].includes(difficulty) ? difficulty : "Medium",
+    topic: toText(question?.topic, "Aptitude"),
+    solution: toText(question?.solution || question?.explanation || question?.rationale),
+    company: toText(question?.company),
+  };
+};
+
+const normalizeQuestionList = (items) => Array.isArray(items) ? items.map(normalizeQuestion) : [];
+
+const requestGeneratedQuestions = async (topic) => {
+  try {
+    return await axios.post('/aptitude/gemini/generate', { topic });
+  } catch (error) {
+    if (![404, 405].includes(error.response?.status)) throw error;
+
+    const params = new URLSearchParams({ topic });
+    return axios.get(`/aptitude/gemini/generate?${params.toString()}`);
+  }
+};
+
 const AptitudePlatform = ({ isMobileOpen, setIsMobileOpen }) => {
   const [activeTopic, setActiveTopic] = useState("");
   const [selectedCompany, setSelectedCompany] = useState(""); // Track selected company
@@ -27,7 +80,7 @@ const AptitudePlatform = ({ isMobileOpen, setIsMobileOpen }) => {
         const query = params.toString();
 
         const res = await axios.get(`/aptitude/questions${query ? `?${query}` : ""}`);
-        setQuestions(res.data);
+        setQuestions(normalizeQuestionList(res.data));
       } catch (err) {
         console.error("Fetch Error:", err);
       } finally {
@@ -45,8 +98,8 @@ const AptitudePlatform = ({ isMobileOpen, setIsMobileOpen }) => {
     setGeneratingAI(true);
     const toastId = toast.loading("Gemini is crafting questions for you...");
     try {
-      const res = await axios.post('/aptitude/gemini/generate', { topic: activeTopic });
-      const generatedQuestions = Array.isArray(res.data) ? res.data : [];
+      const res = await requestGeneratedQuestions(activeTopic);
+      const generatedQuestions = normalizeQuestionList(res.data);
       if (generatedQuestions.length === 0) {
         throw new Error("No questions were returned by the AI service.");
       }
@@ -132,7 +185,7 @@ const AptitudePlatform = ({ isMobileOpen, setIsMobileOpen }) => {
             ) : questions.length > 0 ? (
               <div className="grid gap-4">
                 {questions.map((q, i) => (
-                  <QuestionCard key={q._id} question={q} index={i} />
+                  <QuestionCard key={q._id || `${q.topic}-${q.questionText}-${i}`} question={q} index={i} />
                 ))}
               </div>
             ) : (
@@ -145,4 +198,4 @@ const AptitudePlatform = ({ isMobileOpen, setIsMobileOpen }) => {
   );
 };
 
-export default AptitudePlatform;
+export default AptitudePlatform;

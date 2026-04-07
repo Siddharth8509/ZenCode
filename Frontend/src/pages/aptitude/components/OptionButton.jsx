@@ -8,6 +8,7 @@ const OptionButton = ({
   isWrong,
   onClick
 }) => {
+  const optionText = typeof option === "string" ? option : String(option ?? "");
   let styles =
     "border-white/10 bg-neutral-900/40 text-neutral-300 hover:border-orange-500/40 hover:bg-neutral-800/60";
 
@@ -34,7 +35,7 @@ const OptionButton = ({
       className={`w-full text-left p-3 md:p-3.5 rounded-xl border transition-all flex items-center justify-between text-sm font-semibold ${styles}`}
     >
       {/* Option Text */}
-      <span className="leading-snug">{option}</span>
+      <span className="leading-snug">{optionText}</span>
 
       {/* Right Indicator */}
       <div className="flex items-center ml-3">
