@@ -3,14 +3,13 @@
 import express from "express";
 import adminMiddleware from "../middleware/admin.middleware.js";
 const problemRouter = express.Router();
-import { createProblem, getProblemById, problemFetchAll, updateProblem, solvedProblemByUser, deleteProblem, getSubmission, cleanupOrphanedData, getUserActivity } from "../controllers/problem.controller.js"
+import { createProblem, getProblemById, problemFetchAll, updateProblem, solvedProblemByUser, deleteProblem, getSubmission, getUserActivity } from "../controllers/problem.controller.js"
 import authMiddleware from "../middleware/auth.middleware.js";
 
 // Admin-only endpoints live together at the top because they change platform content.
 problemRouter.post("/create", adminMiddleware, createProblem);
 problemRouter.put("/update/:id", adminMiddleware, updateProblem);
 problemRouter.delete("/delete/:id", adminMiddleware, deleteProblem);
-problemRouter.delete("/cleanup", adminMiddleware, cleanupOrphanedData);
 
 // User-facing reads come next. These power the actual solving experience in the app.
 problemRouter.get("/user", authMiddleware, solvedProblemByUser);

@@ -269,23 +269,6 @@ const getSubmission = async (req, res) => {
 };
 
 /**
- * Development utility to reset user progress and submission history.
- * (Clears the DB of run history across all users)
- */
-const cleanupOrphanedData = async (req, res) => {
-    try {
-        // Clear all users' problemSolved arrays
-        await user.updateMany({}, { $set: { problemSolved: [] } });
-        // Delete all submissions
-        await submission.deleteMany({});
-        return res.status(200).json({ message: "Cleanup complete. All problemSolved arrays cleared, all submissions deleted." });
-    } catch (error) {
-        console.error("Cleanup error:", error);
-        return res.status(500).send("Cleanup failed: " + error.message);
-    }
-};
-
-/**
  * Gets daily activity data for a user (count of accepted submissions per day).
  */
 const getUserActivity = async (req, res) => {
@@ -316,4 +299,4 @@ const getUserActivity = async (req, res) => {
     }
 };
 
-export { createProblem, getProblemById, problemFetchAll, updateProblem, solvedProblemByUser, deleteProblem, getSubmission, cleanupOrphanedData, getUserActivity };
+export { createProblem, getProblemById, problemFetchAll, updateProblem, solvedProblemByUser, deleteProblem, getSubmission, getUserActivity };
