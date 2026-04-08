@@ -38,7 +38,6 @@ export const QuestionSection = ({ questions }) => {
       speech.onend = () => setIsPlaying(false);
     }
     return () => stopSpeech();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   const advanceToNextQuestion = () => {

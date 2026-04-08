@@ -9,6 +9,7 @@ import redisClient from "./config/redis.js";
 import problemRouter from "./routes/problem.routes.js";
 import submissionRouter from "./routes/submission.routes.js";
 import aiRouter from "./routes/ai.routes.js";
+import resumeAnalyzerRouter from "./routes/resumeAnalyzer.routes.js";
 import cors from "cors";
 import { fileURLToPath } from "url";
 import questionRoutes from "./routes/aptitude/questionRoutes.js";
@@ -69,6 +70,7 @@ app.use("/user", authRouter);
 app.use("/problem", problemRouter);
 app.use("/submission", submissionRouter);
 app.use("/ai", aiRouter);
+app.use("/resume-analyzer", resumeAnalyzerRouter);
 
 // Aptitude Routes (Authenticated)
 app.use("/aptitude/questions", authMiddleware, questionRoutes);

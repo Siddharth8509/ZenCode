@@ -9,7 +9,7 @@ import {
   where,
 } from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, Navigate } from "react-router-dom";
+import { useParams, Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { LoaderPage } from "./loader-page";
 import { CustomBreadCrumb } from "@/components/mock-interview/custom-bread-crumb";
@@ -55,12 +55,10 @@ export const Feedback = () => {
   const [activeFeed, setActiveFeed] = useState("");
   const { user } = useSelector((state) => state.auth);
   const userId = user?._id;
-  const navigate = useNavigate();
-
-  if (!interviewId) return <Navigate to="/mock-interview" replace />;
+  const missingInterviewId = !interviewId;
 
   useEffect(() => {
-    if (!interviewId) return;
+    if (missingInterviewId) return;
 
     const fetchInterview = async () => {
       try {
@@ -93,7 +91,7 @@ export const Feedback = () => {
 
     fetchInterview();
     fetchFeedbacks();
-  }, [interviewId, navigate, userId]);
+  }, [interviewId, missingInterviewId, userId]);
 
   const overAllRating = useMemo(() => {
     if (feedbacks.length === 0) return "0.0";
@@ -106,6 +104,8 @@ export const Feedback = () => {
   const ratingNum = parseFloat(overAllRating);
   const ratingColor =
     ratingNum >= 7 ? "text-green-400" : ratingNum >= 4 ? "text-amber-400" : "text-red-400";
+
+  if (missingInterviewId) return <Navigate to="/mock-interview" replace />;
 
   return (
     <div className="flex flex-col w-full gap-8 py-5 animate-fade-in">

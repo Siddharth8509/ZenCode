@@ -1,6 +1,6 @@
 import multer from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import cloudinaryStorage from 'multer-storage-cloudinary';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -13,8 +13,8 @@ cloudinary.config({
 });
 
 // Dynamic Storage Engine
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
+const storage = cloudinaryStorage({
+  cloudinary: { v2: cloudinary },
   params: async (req, file) => {
     const isPdf = file.mimetype === 'application/pdf';
     

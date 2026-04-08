@@ -36,22 +36,30 @@ export default function Navbar() {
                     ZenCode
                 </Link>
 
-                <div className="flex items-center gap-6">
-                    <Link to="/problemset" className="text-neutral-300 hover:text-white font-medium transition-colors">
+                <div className="flex items-center gap-4 md:gap-6 overflow-x-auto no-scrollbar">
+                    <Link to="/problemset" className="text-neutral-300 hover:text-white font-medium transition-colors whitespace-nowrap">
                         Problems
                     </Link>
                     {user && (
-                        <Link to="/mock-interview" className="text-neutral-300 hover:text-white font-medium transition-colors">
+                        <Link to="/mock-interview" className="text-neutral-300 hover:text-white font-medium transition-colors whitespace-nowrap">
                             Mock Interview
                         </Link>
                     )}
                     {user && (
-                        <Link to="/aptitude" className="text-neutral-300 hover:text-white font-medium transition-colors">
+                        <Link to="/aptitude" className="text-neutral-300 hover:text-white font-medium transition-colors whitespace-nowrap">
                             Aptitude
                         </Link>
                     )}
                     {user && (
-                        <Link to="/profile" className="text-neutral-300 hover:text-white font-medium transition-colors">
+                        <Link to="/ai-analyzer" className="inline-flex items-center gap-2 text-neutral-300 hover:text-white font-medium transition-colors whitespace-nowrap">
+                            <span className="rounded-full border border-orange-400/30 bg-orange-500/10 px-2 py-0.5 text-[10px] font-bold text-orange-300 shadow-[0_0_18px_rgba(249,115,22,0.25)]">
+                                AI
+                            </span>
+                            AI Analyzer
+                        </Link>
+                    )}
+                    {user && (
+                        <Link to="/profile" className="text-neutral-300 hover:text-white font-medium transition-colors whitespace-nowrap">
                             Profile
                         </Link>
                     )}

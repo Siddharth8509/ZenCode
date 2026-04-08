@@ -121,12 +121,19 @@ export default function Problemset() {
 
       try {
         const res = await axiosClient.get("/problem/user");
-        const solvedProblems = Array.isArray(res.data?.problems) ? res.data.problems : [];
+        // Backend may return `problems` (old) or `recentSolved` (new) depending on version
+        const solvedProblems = Array.isArray(res.data?.problems)
+          ? res.data.problems
+          : Array.isArray(res.data?.recentSolved)
+            ? res.data.recentSolved
+            : [];
         const nextSolvedMap = {};
 
         solvedProblems.forEach((problemDoc) => {
-          if (problemDoc?._id) {
-            nextSolvedMap[problemDoc._id] = true;
+          // Handle both shapes: { _id } (old) and { problemId } (new)
+          const id = problemDoc?._id || problemDoc?.problemId;
+          if (id) {
+            nextSolvedMap[id] = true;
           }
         });
 
@@ -333,8 +340,11 @@ export default function Problemset() {
             </div>
             <div className="mt-3 h-3 w-full rounded-full bg-neutral-900/70 border border-white/10 overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-emerald-500 via-green-400 to-teal-400 transition-all duration-500"
-                style={{ width: `${solvedProgress}%` }}
+                className="h-full bg-gradient-to-r from-emerald-500 via-green-400 to-teal-400 rounded-full"
+                style={{
+                  width: `${solvedProgress}%`,
+                  transition: 'width 1.2s cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
               />
             </div>
           </div>

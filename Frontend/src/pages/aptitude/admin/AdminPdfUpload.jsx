@@ -41,7 +41,7 @@ const AdminPdfUpload = () => {
 
             setTimeout(() => navigate('/aptitude/admin'), 1200);
 
-        } catch (err) {
+        } catch {
             toast.dismiss(loading);
             toast.error("Upload failed");
         }

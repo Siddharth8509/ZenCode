@@ -3,7 +3,7 @@
 import express from "express";
 import adminMiddleware from "../middleware/admin.middleware.js";
 const problemRouter = express.Router();
-import { createProblem, getProblemById, problemFetchAll, updateProblem, solvedProblemByUser, deleteProblem, getSubmission, cleanupOrphanedData } from "../controllers/problem.controller.js"
+import { createProblem, getProblemById, problemFetchAll, updateProblem, solvedProblemByUser, deleteProblem, getSubmission, cleanupOrphanedData, getUserActivity } from "../controllers/problem.controller.js"
 import authMiddleware from "../middleware/auth.middleware.js";
 
 // Admin-only endpoints live together at the top because they change platform content.
@@ -17,5 +17,5 @@ problemRouter.get("/user", authMiddleware, solvedProblemByUser);
 problemRouter.get("/problemById/:id", authMiddleware, getProblemById);
 problemRouter.get("/getAllProblems", authMiddleware, problemFetchAll);
 problemRouter.get("/submission/:id", authMiddleware, getSubmission);
-
+problemRouter.get("/activity", authMiddleware, getUserActivity);
 export default problemRouter;

@@ -393,7 +393,7 @@ const AdminDashboard = () => {
 
                                   link.remove();
                                   window.URL.revokeObjectURL(url);
-                                } catch (err) {
+                                } catch {
                                   alert("Download failed");
                                 }
                               }}

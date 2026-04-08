@@ -4,9 +4,9 @@ import { Button } from "./ui/button";
 import { Link } from "react-router-dom";
 
 export const ProfileContainer = () => {
-  const { isSignedIn, isLoaded } = useAuth();
+  const { user, loading } = useSelector((state) => state.auth);
 
-  if (!isLoaded) {
+  if (loading) {
     return (
       <div className="flex items-center">
         <Loader className="min-w-4 min-h-4 animate-spin text-emerald-500" />
@@ -16,13 +16,15 @@ export const ProfileContainer = () => {
 
   return (
     <div className="flex items-center gap-6">
-      {isSignedIn ?
-      <UserButton afterSignOutUrl="/" /> :
-
-      <Link to={"/signin"}>
+      {user ? (
+        <Link to="/profile">
+          <Button size="sm">{user.firstname || "Profile"}</Button>
+        </Link>
+      ) : (
+        <Link to="/login">
           <Button size={"sm"}>Get Started</Button>
         </Link>
-      }
+      )}
     </div>);
 
 };

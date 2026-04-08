@@ -40,7 +40,7 @@ export const checkAuth = createAsyncThunk(
     try {
       const { data } = await axiosClient.get("/user/check");
       return data.user;
-    } catch (error) {
+    } catch {
       return rejectWithValue(null); // not authenticated — expected on first visit
     }
   }
@@ -52,7 +52,7 @@ export const logoutUser = createAsyncThunk(
     try {
       await axiosClient.post("/user/logout");
       return null;
-    } catch (error) {
+    } catch {
       return rejectWithValue("Logout failed");
     }
   }

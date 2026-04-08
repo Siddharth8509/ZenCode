@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useSelector } from "react-redux";
 import {
   CircleStop,
@@ -58,7 +57,6 @@ export const RecordAnswer = ({
 
   const [userAnswer, setUserAnswer] = useState("");
   const [isAiGenerating, setIsAiGenerating] = useState(false);
-  const [aiResult, setAiResult] = useState(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -82,7 +80,6 @@ export const RecordAnswer = ({
         userAnswer
       );
 
-      setAiResult(aiRes);
       await autoSaveAnswer(aiRes);
     } else {
       startSpeechToText();

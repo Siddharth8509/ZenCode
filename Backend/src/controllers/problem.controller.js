@@ -201,8 +201,20 @@ const solvedProblemByUser = async (req, res) => {
         if (!userData)
             return res.status(404).send("User not found");
 
+        const totalProblemsCount = await problem.countDocuments();
 
-        return res.status(200).json({ solvedCount: userData.problemSolved.length, problems: userData.problemSolved });
+        // Map problems to match what frontend expects for recentSolved
+        const mappedProblems = userData.problemSolved.map(p => ({
+            problemId: p._id,
+            title: p.title,
+            solvedAt: new Date() // Since user.problemSolved doesn't store timestamps, we just pass something or omit it
+        }));
+
+        return res.status(200).json({ 
+            solvedCount: userData.problemSolved.length, 
+            totalProblems: totalProblemsCount,
+            recentSolved: mappedProblems.reverse() // latest first
+        });
     }
     catch (error) {
         return res.status(500).send("Failed to fetch data");
@@ -273,4 +285,35 @@ const cleanupOrphanedData = async (req, res) => {
     }
 };
 
-export { createProblem, getProblemById, problemFetchAll, updateProblem, solvedProblemByUser, deleteProblem, getSubmission, cleanupOrphanedData };
+/**
+ * Gets daily activity data for a user (count of accepted submissions per day).
+ */
+const getUserActivity = async (req, res) => {
+    try {
+        const userId = req.userId;
+        if (!userId) return res.status(401).send("Unauthorized");
+
+        if (!mongoose.Types.ObjectId.isValid(userId))
+            return res.status(400).send("Invalid user id");
+
+        const activity = await submission.aggregate([
+            { $match: { userId: new mongoose.Types.ObjectId(userId), status: "accepted" } },
+            { 
+                $group: {
+                    _id: {
+                        $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+                    },
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { _id: 1 } }
+        ]);
+
+        return res.status(200).json(activity);
+    } catch (error) {
+        console.error("Activity Error:", error);
+        return res.status(500).send("Failed to fetch activity");
+    }
+};
+
+export { createProblem, getProblemById, problemFetchAll, updateProblem, solvedProblemByUser, deleteProblem, getSubmission, cleanupOrphanedData, getUserActivity };

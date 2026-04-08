@@ -19,6 +19,7 @@ import { CreateEditPage } from './pages/mock-interview/create-edit-page';
 import { MockLoadPage } from './pages/mock-interview/mock-load-page';
 import { MockInterviewPage } from './pages/mock-interview/mock-interview-page';
 import { Feedback } from './pages/mock-interview/feedback';
+import AIAnalyzer from './pages/AIAnalyzer';
 
 // Aptitude Imports
 import AptitudeHome from './pages/aptitude/pages/Home';
@@ -38,7 +39,7 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:300
 const API_HOSTNAME = (() => {
   try {
     return new URL(API_BASE_URL).hostname;
-  } catch (error) {
+  } catch {
     return "";
   }
 })();
@@ -59,7 +60,7 @@ async function pingBackendHealth() {
     });
 
     return response.ok;
-  } catch (error) {
+  } catch {
     return false;
   } finally {
     window.clearTimeout(timeoutId);
@@ -140,6 +141,9 @@ function App() {
         <Route path="/admin" element={isAuthenticated ? <Adminpage /> : <Navigate to="/login" />} />
         <Route path="/profile" element={isAuthenticated ? <Profile /> : <Navigate to="/login" />} />
         <Route path="/problem/:id" element={isAuthenticated ? <Problempage /> : <Navigate to="/login" />} />
+        <Route path="/ai-analyzer" element={isAuthenticated ? <AIAnalyzer /> : <Navigate to="/login" />} />
+        <Route path="/smart-resume-analyzer" element={<Navigate to="/ai-analyzer" replace />} />
+        <Route path="/resume-maker" element={<Navigate to="/ai-analyzer" replace />} />
 
         <Route path="/mock-interview" element={isAuthenticated ? <Generate /> : <Navigate to="/login" />}>
           <Route index element={<Dashboard />} />

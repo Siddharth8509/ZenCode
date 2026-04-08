@@ -40,7 +40,12 @@ export default function Signupform() {
   const { register, handleSubmit, formState: { errors }, } = useForm({ resolver: zodResolver(signupSchema), });
 
   const onSubmit = (data) => {
-    const { confirmedPassword, ...payload } = data;
+    const payload = {
+      firstname: data.firstname,
+      lastname: data.lastname,
+      emailId: data.emailId,
+      password: data.password,
+    };
     dispatch(registerUser(payload));
   };
 

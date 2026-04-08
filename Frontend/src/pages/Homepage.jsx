@@ -1,7 +1,7 @@
 // Homepage is the public-facing landing page.
 // It is mostly presentation, but it also sets expectations about the learning experience.
 import { useEffect, useRef } from "react";
-import { motion } from "motion/react";
+import { motion as Motion } from "motion/react";
 import { Link } from "react-router-dom";
 import { gsap } from "gsap";
 import Navbar from "../components/Navbar";
@@ -136,7 +136,7 @@ export default function Homepage() {
               { label: "Solutions Reviewed", value: "2.1M+" },
               { label: "Hiring Partners", value: "120+" },
             ].map((stat) => (
-              <motion.div
+              <Motion.div
                 key={stat.label}
                 initial={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -146,7 +146,7 @@ export default function Homepage() {
               >
                 <div className="text-3xl font-semibold">{stat.value}</div>
                 <div className="text-neutral-500 text-sm uppercase tracking-[0.2em]">{stat.label}</div>
-              </motion.div>
+              </Motion.div>
             ))}
           </div>
         </div>
@@ -177,7 +177,7 @@ export default function Homepage() {
               Go to Problem Set &gt;
             </Link>
           </div>
-          <motion.div
+          <Motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
@@ -199,7 +199,7 @@ export default function Homepage() {
             <div className="mt-6 h-2 w-full rounded-full bg-neutral-900/80 overflow-hidden">
               <div className="h-full w-[34%] bg-gradient-to-r from-orange-500 to-red-500" />
             </div>
-          </motion.div>
+          </Motion.div>
         </div>
 
         <div className="container mx-auto px-6 mt-28 relative">
@@ -207,7 +207,7 @@ export default function Homepage() {
           <div className="absolute bottom-[-10%] left-1/4 w-[500px] h-[500px] bg-red-500/10 blur-[150px] rounded-full pointer-events-none z-0" />
 
           <div className="text-center mb-16 relative z-10">
-            <motion.h2
+            <Motion.h2
               initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
@@ -215,8 +215,8 @@ export default function Homepage() {
               className="text-4xl md:text-5xl font-semibold tracking-tight"
             >
               ZenCode <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">AI Pro Tools</span>
-            </motion.h2>
-            <motion.p
+            </Motion.h2>
+            <Motion.p
               initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
@@ -224,7 +224,7 @@ export default function Homepage() {
               className="text-neutral-400 text-lg max-w-2xl mx-auto mt-4"
             >
               Elevate your preparation with state-of-the-art AI features designed to simulate real interviews and optimize your profile.
-            </motion.p>
+            </Motion.p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
@@ -240,14 +240,14 @@ export default function Homepage() {
                 link: "/mock-interview"
               },
               {
-                title: "Smart Resume Maker",
-                desc: "Auto-generate ATS-friendly resumes that perfectly highlight your coding skills, core competencies, and ZenCode stats.",
+                title: "AI Analyzer",
+                desc: "Review your resume, improve ATS alignment, build polished documents, and get role-specific career guidance.",
                 icon: (
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.8)]">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                   </svg>
                 ),
-                link: "/resume-maker"
+                link: "/ai-analyzer"
               },
               {
                 title: "Adaptive Aptitude",
@@ -260,7 +260,7 @@ export default function Homepage() {
                 link: "/aptitude"
               },
             ].map((card, idx) => (
-              <motion.div
+              <Motion.div
                 key={card.title}
                 initial={{ opacity: 0, y: 30, scale: 0.95 }}
                 whileInView={{ opacity: 1, y: 0, scale: 1 }}
@@ -285,7 +285,7 @@ export default function Homepage() {
                     Experience It <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
                   </Link>
                 </div>
-              </motion.div>
+              </Motion.div>
             ))}
           </div>
         </div>

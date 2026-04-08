@@ -10,7 +10,7 @@ import {
     XCircleIcon,
     BookOpenIcon,
 } from "@heroicons/react/24/solid";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getSubmissionsApi } from "../api/submission";
 import { useParams } from "react-router-dom";
 import MarkdownPreview from "@uiw/react-markdown-preview";
@@ -39,14 +39,7 @@ export default function LeftPanel({ prop, code, language }) {
     const [submissionError, setSubmissionError] = useState(null);
     const { id } = useParams();
 
-    useEffect(() => {
-        if (activeTab === "submissions" && id) {
-            // Submission history is loaded lazily so normal tab switches stay cheap.
-            loadSubmissions();
-        }
-    }, [activeTab, id]);
-
-    async function loadSubmissions() {
+    const loadSubmissions = useCallback(async () => {
         setLoadingSubmissions(true);
         setSubmissionError(null);
         try {
@@ -59,7 +52,14 @@ export default function LeftPanel({ prop, code, language }) {
         } finally {
             setLoadingSubmissions(false);
         }
-    }
+    }, [id]);
+
+    useEffect(() => {
+        if (activeTab === "submissions" && id) {
+            // Submission history is loaded lazily so normal tab switches stay cheap.
+            loadSubmissions();
+        }
+    }, [activeTab, id, loadSubmissions]);
 
     const TABS = [
         { id: "description", label: "Description" },
@@ -302,7 +302,7 @@ export default function LeftPanel({ prop, code, language }) {
                                     source={prop.editorial}
                                     style={{ padding: 16, backgroundColor: 'transparent' }}
                                     components={{
-                                        a: ({ node, ...props }) => {
+                                        a: ({ node: _node, ...props }) => {
                                             if (props.className && typeof props.className === 'string' && props.className.includes('anchor')) {
                                                 return null;
                                             }

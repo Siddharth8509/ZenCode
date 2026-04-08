@@ -43,16 +43,6 @@ const MockPapers = () => {
         p.category.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    /* ---------------- DOWNLOAD ---------------- */
-    const handleDownload = (url, name) => {
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = name || "mock-paper.pdf";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
     return (
         <div className="min-h-screen bg-black text-white p-4">
             <div className="max-w-[1400px] mx-auto pt-6">
@@ -170,7 +160,7 @@ const MockPapers = () => {
 
                                                                     link.remove();
                                                                     window.URL.revokeObjectURL(url);
-                                                                } catch (err) {
+                                                                } catch {
                                                                     alert("Download failed");
                                                                 }
                                                             }}

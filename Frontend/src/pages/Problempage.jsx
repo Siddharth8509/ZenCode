@@ -26,12 +26,6 @@ export default function Problempage() {
             try {
                 const res = await axiosClient.get(`/problem/problemById/${id}`)
                 setProblemData(res.data);
-
-                // We immediately hydrate the editor with the starter template for the current language.
-                if (res.data?.initialCode) {
-                    const codeObj = res.data.initialCode.find((obj) => obj.language === language);
-                    if (codeObj) setCode(codeObj.code);
-                }
             }
             catch (error) {
                 console.error("Error occured while fetching the data " + error.message);
@@ -65,6 +59,7 @@ export default function Problempage() {
                 }
             } catch (error) {
                 if (!isCancelled) {
+                    console.error("Error occurred while fetching the problem sequence", error);
                     setProblemSequence([]);
                 }
             }
