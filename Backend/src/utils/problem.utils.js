@@ -35,6 +35,21 @@ function getLanguageId(lang) {
   return language[String(lang || "").toLowerCase()];
 }
 
+function buildSourceCode(problemData, language, sourceCode) {
+  const normalizedLanguage = String(language || "").toLowerCase();
+  const driver = Array.isArray(problemData?.driverCode)
+    ? problemData.driverCode.find((entry) => entry?.language === normalizedLanguage)
+    : null;
+
+  if (!driver) {
+    return sourceCode;
+  }
+
+  return [driver.prefix, sourceCode, driver.suffix]
+    .filter((section) => typeof section === "string" && section.trim().length > 0)
+    .join("\n\n");
+}
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const encodeBase64Value = (value) => {
@@ -256,4 +271,4 @@ async function executeCodeAndEvaluate(sourceCode, languageId, testCases) {
   });
 }
 
-export { getLanguageId, submitBatch, submitToken, executeCodeAndEvaluate };
+export { getLanguageId, buildSourceCode, submitBatch, submitToken, executeCodeAndEvaluate };

@@ -25,6 +25,14 @@ const problemSchema = new Schema({
         type: String,
         required: true
     },
+    constraints: {
+        type: String,
+        default: ""
+    },
+    hints: {
+        type: [String],
+        default: []
+    },
     examples: [{
         input: {
             type: String,

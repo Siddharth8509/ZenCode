@@ -4,7 +4,6 @@ import { useEffect, useRef } from "react";
 import { motion as Motion } from "motion/react";
 import { Link } from "react-router-dom";
 import { gsap } from "gsap";
-import Navbar from "../components/Navbar";
 import bgImage from "../assets/homepage_ai_bg_clean.png";
 
 export default function Homepage() {
@@ -38,9 +37,7 @@ export default function Homepage() {
         <div className="absolute inset-0 grid-overlay opacity-30" />
       </div>
 
-      <Navbar />
-
-      <div className="relative z-10 w-full pt-28 pb-24">
+      <div className="relative z-10 w-full pt-4 pb-24">
         <div ref={heroRef} className="container mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
             <div className="space-y-7">

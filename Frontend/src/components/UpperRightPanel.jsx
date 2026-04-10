@@ -3,7 +3,7 @@
 import Editor from "@monaco-editor/react";
 import { useEffect, useRef } from "react";
 
-export default function UpperRightPanle({ code, setCode, language, setLanguage }) {
+export default function UpperRightPanel({ code, setCode, language, setLanguage = () => undefined }) {
   const editorRef = useRef(null);
 
   function handleEditorDidMount(editor) {

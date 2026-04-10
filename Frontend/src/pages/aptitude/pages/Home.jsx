@@ -65,7 +65,7 @@ const Home = () => {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wMikiLz48L3N2Zz4=')] [mask-image:radial-gradient(ellipse_at_center,black,transparent_80%)]" />
       </div>
 
-      <div className="relative z-10 w-full pt-16 pb-28 flex flex-col items-center px-4 md:px-8">
+      <div className="relative z-10 w-full pt-4 pb-28 flex flex-col items-center px-4 md:px-8">
         
         {/* HERO HEADER */}
         <div className="text-center mb-16 relative max-w-4xl mx-auto mt-8 flex flex-col items-center justify-center">

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { PlayIcon, PauseIcon, ArrowPathIcon } from "@heroicons/react/24/solid";
 
-export default function Timer() {
+export default function Timer({ compact = false }) {
   const [seconds, setSeconds] = useState(0);
   const [running, setRunning] = useState(false);
 
@@ -25,28 +25,32 @@ export default function Timer() {
     return `${mins}:${secs}`;
   };
 
+  const wrapperClassName = compact
+    ? "flex items-center gap-2 rounded-xl border border-white/10 bg-neutral-950/90 px-3 py-1.5 text-white shadow-lg"
+    : "flex items-center gap-3 bg-neutral-900 text-white px-4 py-2 rounded-full shadow-lg w-fit";
+  const timeClassName = compact
+    ? "font-mono text-sm font-semibold tracking-[0.18em]"
+    : "font-mono text-lg tracking-wide";
+  const iconClassName = compact ? "w-4 h-4" : "w-5 h-5";
+
   return (
-    <div className="flex items-center gap-3 bg-neutral-900 text-white px-4 py-2 rounded-full shadow-lg w-fit">
-      
-      {/* Time */}
-      <span className="font-mono text-lg tracking-wide">
+    <div className={wrapperClassName}>
+      <span className={timeClassName}>
         {formatTime()}
       </span>
 
-      {/* Start / Pause */}
       {!running ? (
         <button onClick={() => setRunning(true)} className="text-green-400 hover:text-green-300 transition">
-          <PlayIcon className="w-5 h-5" />
+          <PlayIcon className={iconClassName} />
         </button>
       ) : (
         <button onClick={() => setRunning(false)} className="text-yellow-400 hover:text-yellow-300 transition">
-          <PauseIcon className="w-5 h-5" />
+          <PauseIcon className={iconClassName} />
         </button>
       )}
 
-      {/* Reset */}
-      <button onClick={() => { setRunning(false); setSeconds(0);} }className="text-gray-400 hover:text-gray-200 transition">
-        <ArrowPathIcon className="w-5 h-5" />
+      <button onClick={() => { setRunning(false); setSeconds(0);} } className="text-gray-400 hover:text-gray-200 transition">
+        <ArrowPathIcon className={iconClassName} />
       </button>
     </div>
   );
