@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
-import Navbar from "../components/Navbar";
+import { Link } from "react-router-dom";
 import axiosClient from "../utils/axiosClient";
 
 const TARGET_ROLES = [
@@ -403,16 +403,6 @@ export default function AIAnalyzer() {
     }
   };
 
-  const handleOpenHistory = async (id) => {
-    setError("");
-    try {
-      const response = await axiosClient.get(`/resume-analyzer/history/${id}`);
-      setAnalysis(response.data?.analysis || null);
-    } catch (error) {
-      setError(getErrorMessage(error, "Unable to load this analysis."));
-    }
-  };
-
   const handleDeleteHistory = async (id) => {
     setError("");
     try {
@@ -440,9 +430,7 @@ export default function AIAnalyzer() {
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-orange-500/20">
-      <Navbar />
-
-      <main className="container mx-auto px-5 pt-24 pb-12">
+      <main className="container mx-auto px-5 pt-4 pb-12">
         <div className="mx-auto mb-8 flex max-w-4xl flex-col items-center gap-5 text-center">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-orange-300">ZenCode AI</p>
@@ -542,25 +530,27 @@ export default function AIAnalyzer() {
               <div className="mt-5 space-y-3">
                 {history.length ? (
                   history.map((item) => (
-                    <div key={item._id} className="rounded-xl border border-white/10 bg-black/70 p-4">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenHistory(item._id)}
-                        className="block w-full text-center sm:text-left"
-                      >
-                        <div className="font-semibold text-white">{item.candidateName || item.fileName || "Resume"}</div>
+                    <div key={item._id} className="rounded-xl border border-white/10 bg-black/70 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-white truncate">{item.candidateName || item.fileName || "Resume"}</div>
                         <div className="mt-1 text-xs text-neutral-500">
                           {item.targetRole || "General role"} - Score {item.resumeScore || 0}/100
                         </div>
                         <div className="mt-1 text-xs text-neutral-600">
                           {item.createdAt ? new Date(item.createdAt).toLocaleString() : ""}
                         </div>
-                      </button>
-                      <div className="text-center sm:text-left">
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <Link
+                          to={`/ai-analyzer/report/${item._id}`}
+                          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500/10 to-red-500/10 hover:from-orange-500/20 hover:to-red-500/20 border border-white/10 hover:border-white/20 px-4 py-2 text-sm font-semibold text-white transition-all"
+                        >
+                          View Report →
+                        </Link>
                         <button
                           type="button"
                           onClick={() => handleDeleteHistory(item._id)}
-                          className="mt-3 text-xs font-semibold text-rose-300 hover:text-rose-200"
+                          className="text-xs font-semibold text-rose-300 hover:text-rose-200"
                         >
                           Delete
                         </button>

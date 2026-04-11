@@ -1,121 +1,143 @@
-// Problempage is the heart of the product.
-// It brings together the prompt, editor, judge results, submissions, and AI assistant in one IDE-style layout.
-import { useState, useEffect, useMemo } from "react";
-import axiosClient from "../utils/axiosClient";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import axiosClient from "../utils/axiosClient";
+import Loader from "../components/Loader";
+import CodeEditor from "../components/CodeEditor";
 import Timer from "../components/Timer";
-import { Panel, Group, Separator } from "react-resizable-panels";
-import LeftPanel from "../components/LeftPanel";
-import UpperRightPanel from "../components/UpperRightPanel";
-import BottomRight from "../components/BottomRight";
+import ZenCodeMark from "../components/ZenCodeMark";
 import { runCodeApi, submitCodeApi } from "../api/submission";
 
-export default function Problempage() {
-    let { id } = useParams();
-    const navigate = useNavigate();
-    const [problemData, setProblemData] = useState(null);
-    const [code, setCode] = useState("// Write your code here");
-    const [language, setLanguage] = useState("cpp");
-    const [output, setOutput] = useState(null);
-    const [isRunning, setIsRunning] = useState(false);
-    const [submissionPopup, setSubmissionPopup] = useState(null);
-    const [problemSequence, setProblemSequence] = useState([]);
-
-    useEffect(() => {
-        const fetchProblemData = async () => {
-            try {
-                const res = await axiosClient.get(`/problem/problemById/${id}`)
-                setProblemData(res.data);
-            }
-            catch (error) {
-                console.error("Error occured while fetching the data " + error.message);
-            }
+const getErrorMessage = (error, fallback) => {
+    const sanitizeMessage = (value) => {
+        if (typeof value !== "string" || !value.trim()) return null;
+        if (/<\/?[a-z][\s\S]*>/i.test(value) || /Cannot GET/i.test(value)) {
+            return fallback;
         }
-        fetchProblemData();
-    }, [id])
+
+        return value;
+    };
+
+    const directMessage = sanitizeMessage(error);
+    if (directMessage) return directMessage;
+    if (error?.message && !error?.response) return error.message;
+    const data = error?.response?.data;
+    const responseMessage = sanitizeMessage(data);
+    if (responseMessage) return responseMessage;
+    if (data?.message) return sanitizeMessage(data.message) || fallback;
+    return fallback;
+};
+
+export default function Problempage() {
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const user = useSelector((state) => state.auth.user);
+
+    const [problem, setProblem] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [code, setCode] = useState("");
+    const [language, setLanguage] = useState("cpp");
+    const [isRunning, setIsRunning] = useState(false);
+    const [output, setOutput] = useState(null);
+    const [submissionPopup, setSubmissionPopup] = useState(null);
+
+    // Problem sequence for next/prev
+    const [allProblemIds, setAllProblemIds] = useState([]);
+    const currentIndex = allProblemIds.indexOf(id);
+    const hasNextProblem = currentIndex !== -1 && currentIndex < allProblemIds.length - 1;
+    const hasPreviousProblem = currentIndex > 0;
+    const userInitial = user?.firstname?.[0]?.toUpperCase() || user?.emailId?.[0]?.toUpperCase() || "U";
+    const userName = user?.firstname || "Profile";
+    const submissionStatus = String(submissionPopup?.problemStatus || submissionPopup?.status || "").toLowerCase();
+    const isAcceptedSubmission = submissionPopup?.type !== "error" && submissionStatus === "accepted";
+    const isErroredSubmission = submissionPopup?.type === "error" || (submissionPopup?.type === "submit" && !isAcceptedSubmission);
 
     useEffect(() => {
-        let isCancelled = false;
-
-        const fetchProblemSequence = async () => {
+        const fetchIds = async () => {
             try {
-                const allProblemIds = [];
+                const ids = [];
                 let page = 1;
                 let hasMore = true;
 
-                // Previous/next navigation is built from the same paginated list the problemset uses.
                 while (hasMore) {
                     const res = await axiosClient.get(`/problem/getAllProblems?page=${page}`);
-                    const fetchedProblems = Array.isArray(res.data?.problems) ? res.data.problems : [];
-                    fetchedProblems.forEach((problemDoc) => {
-                        if (problemDoc?._id) allProblemIds.push(problemDoc._id);
-                    });
+                    const fetchedIds = Array.isArray(res.data?.problems)
+                        ? res.data.problems.map((problemDoc) => problemDoc?._id).filter(Boolean)
+                        : [];
+
+                    ids.push(...fetchedIds);
                     hasMore = Boolean(res.data?.hasMore);
                     page += 1;
                 }
 
-                if (!isCancelled) {
-                    setProblemSequence(allProblemIds);
-                }
-            } catch (error) {
-                if (!isCancelled) {
-                    console.error("Error occurred while fetching the problem sequence", error);
-                    setProblemSequence([]);
-                }
+                setAllProblemIds(ids);
+            } catch (err) {
+                console.error("Failed to fetch problem IDs", err);
             }
         };
-
-        fetchProblemSequence();
-
-        return () => {
-            isCancelled = true;
-        };
+        fetchIds();
     }, []);
 
-    const currentProblemIndex = useMemo(
-        () => problemSequence.findIndex((problemId) => problemId === id),
-        [problemSequence, id]
-    );
+    useEffect(() => {
+        const fetchProblem = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const endpoints = [
+                    `/problem/problemById/${id}`,
+                    `/problem/getProblemById/${id}`,
+                ];
+                let res = null;
+                let lastNotFoundError = null;
 
-    const hasPreviousProblem = currentProblemIndex > 0;
-    const hasNextProblem =
-        currentProblemIndex !== -1 && currentProblemIndex < problemSequence.length - 1;
+                for (const endpoint of endpoints) {
+                    try {
+                        res = await axiosClient.get(endpoint);
+                        break;
+                    } catch (err) {
+                        if (err?.response?.status === 404) {
+                            lastNotFoundError = err;
+                            continue;
+                        }
 
-    const handlePreviousProblem = () => {
-        if (!hasPreviousProblem) return;
-        navigate(`/problem/${problemSequence[currentProblemIndex - 1]}`);
+                        throw err;
+                    }
+                }
+
+                if (!res) {
+                    throw lastNotFoundError || new Error("Problem not found");
+                }
+
+                setProblem(res.data);
+                // Set initial code for the default language
+                const initial = res.data.initialCode?.find(c => c.language === "cpp")?.code || "";
+                setCode(initial);
+            } catch (err) {
+                setError(getErrorMessage(err, "Problem not found"));
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProblem();
+    }, [id]);
+
+    const handleLanguageChange = (newLang) => {
+        setLanguage(newLang);
+        const initial = problem?.initialCode?.find(c => c.language === newLang)?.code || "";
+        setCode(initial);
     };
 
     const handleNextProblem = () => {
-        if (!hasNextProblem) return;
-        navigate(`/problem/${problemSequence[currentProblemIndex + 1]}`);
+        if (hasNextProblem) {
+            navigate(`/problem/${allProblemIds[currentIndex + 1]}`);
+        }
     };
 
-    useEffect(() => {
-        if (problemData?.initialCode) {
-            // Changing language should feel like switching tabs, not like opening a blank editor.
-            const codeObj = problemData.initialCode.find((obj) => obj.language === language);
-            if (codeObj) {
-                setCode(codeObj.code);
-            } else {
-                setCode("// Write your code here");
-            }
+    const handlePreviousProblem = () => {
+        if (hasPreviousProblem) {
+            navigate(`/problem/${allProblemIds[currentIndex - 1]}`);
         }
-    }, [language, problemData]);
-
-    const getErrorMessage = (error, fallback) => {
-        if (!error) return fallback;
-        if (typeof error === "string") return error;
-        if (typeof error === "object") {
-            return (
-                error.message ||
-                error.errorMessage ||
-                error.error ||
-                (typeof error.data === "string" ? error.data : null) ||
-                fallback
-            );
-        }
-        return String(error) || fallback;
     };
 
     const handleRun = async () => {
@@ -123,7 +145,19 @@ export default function Problempage() {
         setOutput(null);
         try {
             const res = await runCodeApi(id, code, language);
-            setOutput({ ...res, type: 'run' });
+            const results = Array.isArray(res) ? res : [];
+            const firstFailure = results.find((item) => item?.statusId !== 3);
+
+            setOutput({
+                type: 'run',
+                results,
+                problemStatus: firstFailure
+                    ? (firstFailure.status === "Wrong Answer" ? "wrong_answer" : "runtime_error")
+                    : "accepted",
+                runtime: results.reduce((total, item) => total + (Number(item?.time) || 0), 0),
+                memory: results.reduce((peak, item) => Math.max(peak, Number(item?.memory) || 0), 0),
+                errorMessage: firstFailure?.error || null,
+            });
         } catch (error) {
             console.error(error);
             setOutput({ errorMessage: getErrorMessage(error, "Error running code"), type: 'error' });
@@ -137,18 +171,33 @@ export default function Problempage() {
         setOutput(null);
         try {
             const res = await submitCodeApi(id, code, language);
-            if (res && typeof res === "object") {
-                // The popup UI expects plain renderable values, so we normalize everything before storing it.
+            const submission =
+                res?.submission && typeof res.submission === "object"
+                    ? res.submission
+                    : res && typeof res === "object" && (
+                        "status" in res ||
+                        "problemStatus" in res ||
+                        "runtime" in res ||
+                        "testCasesPassed" in res
+                    )
+                        ? res
+                        : null;
+
+            if (submission && typeof submission === "object") {
                 const safePayload = {
                     type: 'submit',
-                    problemStatus: res.problemStatus ? String(res.problemStatus) : null,
-                    status: res.status ? String(res.status) : null,
-                    message: res.message ? String(res.message) : null,
-                    errorMessage: res.errorMessage ? String(res.errorMessage) : null,
-                    runtime: res.runtime != null ? Number(res.runtime) : null,
-                    memory: res.memory != null ? Number(res.memory) : null,
-                    testCasesPassed: res.testCasesPassed != null ? Number(res.testCasesPassed) : null,
-                    testCasesTotal: res.testCasesTotal != null ? Number(res.testCasesTotal) : null,
+                    problemStatus: submission.problemStatus ? String(submission.problemStatus) : (submission.status ? String(submission.status) : null),
+                    status: submission.status ? String(submission.status) : (submission.problemStatus ? String(submission.problemStatus) : null),
+                    message: res?.message
+                        ? String(res.message)
+                        : submission.message
+                            ? String(submission.message)
+                            : "Problem submitted successfully",
+                    errorMessage: submission.errorMessage ? String(submission.errorMessage) : null,
+                    runtime: submission.runtime != null ? Number(submission.runtime) : null,
+                    memory: submission.memory != null ? Number(submission.memory) : null,
+                    testCasesPassed: submission.testCasesPassed != null ? Number(submission.testCasesPassed) : null,
+                    testCasesTotal: submission.testCasesTotal != null ? Number(submission.testCasesTotal) : null,
                 };
                 setOutput(safePayload);
                 setSubmissionPopup({ ...safePayload, language, timestamp: Date.now() });
@@ -159,61 +208,68 @@ export default function Problempage() {
             }
         } catch (error) {
             console.error(error);
-            const errorMessage = getErrorMessage(error, "Error submitting code");
-            setOutput({ errorMessage, type: 'error' });
-            setSubmissionPopup({ errorMessage, type: "error", language, timestamp: Date.now() });
+            const errPayload = { errorMessage: getErrorMessage(error, "Submission failed"), type: 'error' };
+            setOutput(errPayload);
+            setSubmissionPopup({ ...errPayload, language, timestamp: Date.now() });
         } finally {
             setIsRunning(false);
         }
     };
 
+    if (loading) return <Loader message="Analyzing problem constraints..." />;
+    if (error) return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-6">
+            <h2 className="text-2xl font-bold text-rose-500 mb-4">{error}</h2>
+            <button onClick={() => navigate('/problemset')} className="btn btn-outline border-white/20 text-white">
+                Back to Problem Set
+            </button>
+        </div>
+    );
+
     return (
         <>
-            <div className="h-screen w-full overflow-hidden">
+            <div className="h-[100dvh] w-full overflow-hidden flex flex-col bg-black">
+                <div className="grid h-14 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 bg-black/95 px-3 md:px-4 border-b border-neutral-900 relative z-20 shrink-0 backdrop-blur-md">
+                    <div className="flex min-w-0 items-center gap-2 md:gap-3">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/problemset")}
+                            className="group flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-neutral-950/80 transition-all hover:border-orange-400/30 hover:bg-neutral-900"
+                            title="Back to problem set"
+                        >
+                            <ZenCodeMark className="h-7 w-7 transition-transform duration-300 group-hover:scale-105" />
+                        </button>
 
-                {/*IDE Navbar*/}
-                <div className="flex h-16 bg-black/95 backdrop-blur-md items-center justify-between px-4 border-b border-neutral-900 relative z-20">
-                    {/* Left: Navigation */}
-                    <div className="flex gap-4 items-center">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xl font-bold bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent mr-4">ZenCode</span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => navigate('/problemset')} className="btn btn-sm btn-ghost text-neutral-300 hover:text-white flex items-center gap-2 hover:bg-white/5">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3" />
+                        <div className="join border border-white/5 rounded-xl overflow-hidden bg-white/5">
+                            <button
+                                className="btn btn-sm btn-ghost join-item text-neutral-400 hover:bg-white/5 disabled:opacity-40"
+                                onClick={handlePreviousProblem}
+                                disabled={!hasPreviousProblem}
+                                title="Previous problem"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
                                 </svg>
-                                Problem List
                             </button>
-
-                            <div className="join">
-                                <button
-                                    className="btn btn-sm btn-ghost join-item text-neutral-400 hover:bg-white/5 disabled:opacity-40"
-                                    onClick={handlePreviousProblem}
-                                    disabled={!hasPreviousProblem}
-                                    title="Previous problem"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-                                    </svg>
-                                </button>
-                                <button
-                                    className="btn btn-sm btn-ghost join-item text-neutral-400 hover:bg-white/5 disabled:opacity-40"
-                                    onClick={handleNextProblem}
-                                    disabled={!hasNextProblem}
-                                    title="Next problem"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-                                    </svg>
-                                </button>
-                            </div>
+                            <button
+                                className="btn btn-sm btn-ghost join-item text-neutral-400 hover:bg-white/5 disabled:opacity-40"
+                                onClick={handleNextProblem}
+                                disabled={!hasNextProblem}
+                                title="Next problem"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                                </svg>
+                            </button>
                         </div>
+
+                        <div className="hidden sm:block h-6 w-px bg-white/10" />
+                        <h2 className="hidden sm:block truncate text-sm font-semibold text-neutral-200 max-w-[150px] md:max-w-[220px] lg:max-w-[360px]">
+                            {problem.title}
+                        </h2>
                     </div>
 
-                    {/* Middle: Actions */}
-                    <div className="flex gap-3">
+                    <div className="flex items-center justify-center gap-2 md:gap-3">
                         <button
                             className={`btn btn-sm bg-neutral-900 hover:bg-neutral-800 text-white border-none gap-2 transition-all duration-300 ${isRunning ? "opacity-70 cursor-not-allowed" : "hover:scale-[1.02] active:scale-[0.97]"}`}
                             onClick={handleRun}
@@ -226,77 +282,79 @@ export default function Problempage() {
                         </button>
 
                         <button
-                            className={`btn btn-sm bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-none gap-2 px-6 shadow-2xl transition-all duration-300 ${isRunning ? "opacity-70 cursor-not-allowed" : "hover:scale-[1.02] active:scale-[0.97]"}`}
+                            className={`btn btn-sm bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-none gap-2 px-4 md:px-6 shadow-2xl transition-all duration-300 ${isRunning ? "opacity-70 cursor-not-allowed" : "hover:scale-[1.02] active:scale-[0.97]"}`}
                             onClick={handleSubmit}
                             disabled={isRunning}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
                             </svg>
-                            {isRunning ? "Submitting..." : "Submit"}
+                            Submit
                         </button>
                     </div>
 
-                    {/* Right: Timer */}
-                    <div className="text-neutral-300 font-mono px-3 py-1 rounded">
-                        <Timer></Timer>
+                    <div className="flex items-center justify-self-end gap-2 md:gap-3">
+                        <div className="hidden md:flex">
+                            <Timer compact />
+                        </div>
+                        <div className="dropdown dropdown-end">
+                            <button
+                                tabIndex={0}
+                                type="button"
+                                className="btn btn-ghost btn-circle avatar placeholder h-10 w-10 min-h-10 rounded-full border border-white/10 bg-white/5 hover:bg-white/10"
+                                title="Open profile menu"
+                            >
+                                {user?.profilePic ? (
+                                    <div className="h-10 w-10 rounded-full overflow-hidden">
+                                        <img src={user.profilePic} alt="Profile" className="h-full w-full object-cover" />
+                                    </div>
+                                ) : (
+                                    <div className="h-10 w-10 rounded-full bg-neutral-700 text-neutral-100 flex items-center justify-center text-sm font-semibold">
+                                        {userInitial}
+                                    </div>
+                                )}
+                            </button>
+                            <ul tabIndex={0} className="menu menu-sm dropdown-content z-[80] mt-3 w-52 rounded-2xl border border-white/10 bg-neutral-900/95 p-2 shadow-2xl">
+                                <li className="menu-title text-neutral-400 px-3 py-2">
+                                    <span>Hello, {userName}</span>
+                                </li>
+                                <li>
+                                    <button onClick={() => navigate("/profile")} className="text-neutral-200 hover:bg-white/5">
+                                        View Profile
+                                    </button>
+                                </li>
+                                <li>
+                                    <button onClick={() => navigate("/problemset")} className="text-neutral-200 hover:bg-white/5">
+                                        Problem Set
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
 
-
-                <div className="bg-black h-[calc(100vh-64px)] w-full overflow-hidden relative">
-                    {/* Ambient Glow removed for clean black theme */}
-
-                    <Group orientation="horizontal" className="z-10 relative p-1 h-full w-full min-h-0 min-w-0">
-
-                        <Panel defaultSize="40%" minSize="25%" className="m-1 rounded-xl overflow-hidden border border-white/10 shadow-2xl min-h-0 min-w-0">
-                            <LeftPanel prop={problemData} code={code} language={language} />
-                        </Panel>
-                        <Separator className="w-1 cursor-col-resize bg-transparent hover:bg-orange-400/60 transition-colors" />
-
-                        <Panel defaultSize="60%" minSize="30%" className="min-h-0 min-w-0">
-                            <Group orientation="vertical" className="h-full min-h-0">
-                                <Panel defaultSize="65%" minSize="20%" className="m-1 rounded-xl border border-white/10 overflow-hidden shadow-2xl min-h-0">
-                                    <UpperRightPanel
-                                        prop={problemData}
-                                        code={code}
-                                        setCode={setCode}
-                                        language={language}
-                                        setLanguage={setLanguage}
-                                    />
-                                </Panel>
-                                <Separator className="bg-transparent h-1 cursor-row-resize hover:bg-orange-400/60 transition-colors" />
-                                <Panel defaultSize="35%" minSize="15%" className="m-1 rounded-xl border border-white/10 shadow-2xl min-h-0">
-                                    <BottomRight prop={problemData} output={output} />
-                                </Panel>
-                            </Group>
-                        </Panel>
-
-                    </Group>
-
+                {/* Main Content Area */}
+                <div className="flex-1 overflow-hidden">
+                    <CodeEditor
+                        problem={problem}
+                        code={code}
+                        language={language}
+                        onCodeChange={setCode}
+                        onLanguageChange={handleLanguageChange}
+                        output={output}
+                    />
                 </div>
-
             </div>
 
+            {/* Submission Popup */}
             {submissionPopup && (
-                <div className="fixed left-4 top-20 z-50 w-[min(380px,calc(100vw-2rem))] animate-slide-in-left">
-                    <div className="relative rounded-2xl border border-white/10 bg-neutral-900/90 p-5 shadow-2xl">
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="flex items-center gap-3">
-                                <div
-                                    className={`h-12 w-12 rounded-2xl flex items-center justify-center ${submissionPopup.type === "error"
-                                        ? "bg-rose-500/10 text-rose-400"
-                                        : (submissionPopup.problemStatus || submissionPopup.status) === "accepted"
-                                            ? "bg-emerald-500/10 text-emerald-400"
-                                            : "bg-orange-500/10 text-orange-300"
-                                        }`}
-                                >
-                                    <span className="text-xl font-bold">
-                                        {submissionPopup.type === "error"
-                                            ? "!"
-                                            : (submissionPopup.problemStatus || submissionPopup.status) === "accepted"
-                                                ? "OK"
-                                                : ">"}
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="w-full max-w-md glass-panel p-6 rounded-3xl border border-white/10 animate-in fade-in zoom-in duration-300">
+                        <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className={`h-12 w-12 rounded-2xl flex items-center justify-center ${isErroredSubmission ? "bg-rose-500/20 text-rose-400" : "bg-emerald-500/20 text-emerald-400"}`}>
+                                    <span className="text-xs font-bold tracking-[0.22em]">
+                                        {isErroredSubmission ? "ERR" : "OK"}
                                     </span>
                                 </div>
                                 <div>
@@ -304,7 +362,7 @@ export default function Problempage() {
                                         Submission Result
                                     </div>
                                     <div className="text-xl font-semibold text-white">
-                                        {submissionPopup.type === "error"
+                                        {isErroredSubmission
                                             ? "Submission Failed"
                                             : String(submissionPopup.problemStatus || submissionPopup.status || "Submitted").replace(/_/g, " ")}
                                     </div>
@@ -337,7 +395,7 @@ export default function Problempage() {
                             </div>
                         )}
 
-                        {submissionPopup.message && (
+                        {submissionPopup.message && !isErroredSubmission && (
                             <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-emerald-200 text-sm">
                                 {String(submissionPopup.message)}
                             </div>

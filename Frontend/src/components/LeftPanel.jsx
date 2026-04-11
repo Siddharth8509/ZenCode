@@ -10,12 +10,21 @@ import {
     XCircleIcon,
     BookOpenIcon,
 } from "@heroicons/react/24/solid";
-import { useState, useEffect, useCallback } from "react";
+import { Suspense, lazy, useState, useEffect, useCallback } from "react";
 import { getSubmissionsApi } from "../api/submission";
 import { useParams } from "react-router-dom";
-import MarkdownPreview from "@uiw/react-markdown-preview";
-import Markdown from "react-markdown";
-import Chatbot from "./Chatbot";
+
+const MarkdownPreview = lazy(() => import("@uiw/react-markdown-preview"));
+const Markdown = lazy(() => import("react-markdown"));
+const Chatbot = lazy(() => import("./Chatbot"));
+
+function PanelFallback({ message }) {
+    return (
+        <div className="rounded-2xl bg-neutral-900/80 border border-white/10 p-4 text-sm text-neutral-500">
+            {message}
+        </div>
+    );
+}
 
 export default function LeftPanel({ prop, code, language }) {
     const companies = Array.isArray(prop?.companies)
@@ -134,7 +143,9 @@ export default function LeftPanel({ prop, code, language }) {
 
                         <div className="space-y-2">
                             <div className="prose prose-invert prose-sm max-w-none text-neutral-300 leading-relaxed">
-                                <Markdown>{prop?.description || "No description available."}</Markdown>
+                                <Suspense fallback={<PanelFallback message="Loading description..." />}>
+                                    <Markdown>{prop?.description || "No description available."}</Markdown>
+                                </Suspense>
                             </div>
                         </div>
 
@@ -298,18 +309,20 @@ export default function LeftPanel({ prop, code, language }) {
                                         pointer-events: none !important;
                                     }
                                 `}</style>
-                                <MarkdownPreview
-                                    source={prop.editorial}
-                                    style={{ padding: 16, backgroundColor: 'transparent' }}
-                                    components={{
-                                        a: ({ node: _node, ...props }) => {
-                                            if (props.className && typeof props.className === 'string' && props.className.includes('anchor')) {
-                                                return null;
+                                <Suspense fallback={<PanelFallback message="Loading editorial..." />}>
+                                    <MarkdownPreview
+                                        source={prop.editorial}
+                                        style={{ padding: 16, backgroundColor: 'transparent' }}
+                                        components={{
+                                            a: ({ node: _node, ...props }) => {
+                                                if (props.className && typeof props.className === 'string' && props.className.includes('anchor')) {
+                                                    return null;
+                                                }
+                                                return <a {...props} />;
                                             }
-                                            return <a {...props} />;
-                                        }
-                                    }}
-                                />
+                                        }}
+                                    />
+                                </Suspense>
                             </div>
                         ) : (
                             <div className="rounded-2xl bg-neutral-900/80 border border-white/10 p-8 text-center">
@@ -323,7 +336,9 @@ export default function LeftPanel({ prop, code, language }) {
 
                 {activeTab === "chatbot" && (
                     <div className="h-full">
-                        <Chatbot prop={prop} code={code} language={language} />
+                        <Suspense fallback={<PanelFallback message="Loading AI assistant..." />}>
+                            <Chatbot prop={prop} code={code} language={language} />
+                        </Suspense>
                     </div>
                 )}
             </div>

@@ -6,8 +6,8 @@ import QuestionCard from '../components/QuestionCard';
 import Breadcrumbs from '../components/Breadcrumbs';
 import SkeletonLoader from '../components/SkeletonLoader';
 import EmptyState from '../components/EmptyState';
-import Navbar from '../components/Navbar';
 import { SparklesIcon } from '@heroicons/react/24/solid';
+import { Bars3Icon } from '@heroicons/react/24/outline';
 
 const toText = (value, fallback = "") => {
   if (value === null || value === undefined) return fallback;
@@ -120,7 +120,7 @@ const AptitudePlatform = ({ isMobileOpen, setIsMobileOpen }) => {
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-black text-white transition-colors duration-300">
+    <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-black text-white transition-colors duration-300">
 
       <div className="flex flex-1 overflow-hidden relative">
 
@@ -136,8 +136,19 @@ const AptitudePlatform = ({ isMobileOpen, setIsMobileOpen }) => {
 
         {/* Main Content Area */}
         <main className="flex-1 p-4 md:p-6 overflow-y-auto">
-          <div className="max-w-5xl mx-auto">
-            <Breadcrumbs activeTopic={activeTopic} />
+          <div className="max-w-5xl mx-auto pt-2">
+            <div className="flex items-center gap-3 mb-4 md:hidden">
+              <button
+                onClick={() => setIsMobileOpen(true)}
+                className="p-2 rounded-xl bg-white/5 text-neutral-300 hover:bg-white/10 transition-all border border-white/10"
+              >
+                <Bars3Icon className="w-6 h-6" />
+              </button>
+              <Breadcrumbs activeTopic={activeTopic} />
+            </div>
+            <div className="hidden md:block">
+               <Breadcrumbs activeTopic={activeTopic} />
+            </div>
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
               <div>

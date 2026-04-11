@@ -1,6 +1,5 @@
 // This controller owns the full account lifecycle:
 // sign up, sign in, sign out, profile edits, password resets, and account deletion.
-import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
@@ -8,34 +7,29 @@ import User from "../model/user.js";
 import redisClient from "../config/redis.js";
 import authValidate from "../utils/authValidator.js";
 import submission from "../model/submission.js";
-import user from "../model/user.js";
+import cloudinary from "../config/cloudinary.js";
+import serializeUser from "../utils/serializeUser.js";
 
 const registerUser = async (req, res) => {
     try {
         authValidate(req.body);
 
-        // We force the public signup route to create normal users only.
-        req.body.role = "user";
-        const { password, ...data } = req.body;
-        const emailId = req.body.emailId;
+        const normalizedEmailId = req.body.emailId.trim().toLowerCase();
+        const { password, role, ...data } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = await User.create({ password: hashedPassword, ...data });
+        const newUser = await User.create({
+            ...data,
+            emailId: normalizedEmailId,
+            password: hashedPassword,
+            role: "user",
+        });
 
         // The frontend relies on this cookie-based session, so we mint the token right after signup.
         const token = jwt.sign(
-            { _id: newUser._id, emailId: emailId, role: newUser.role },
+            { _id: newUser._id, emailId: normalizedEmailId, role: newUser.role },
             process.env.JWT_SECRET,
             { expiresIn: "1h" }
         );
-
-        const userData = await User.findOne({ emailId });
-        const reply = {
-            _id: userData._id,
-            firstname: userData.firstname,
-            lastname: userData.lastname,
-            emailId: userData.emailId,
-            role: userData.role
-        };
 
         res.cookie("token", token, {
             maxAge: 60 * 60 * 1000,
@@ -44,7 +38,7 @@ const registerUser = async (req, res) => {
             secure: process.env.NODE_ENV === "production",
         });
         res.status(201).json({
-            user: reply,
+            user: serializeUser(newUser),
             message: "User registered successfully"
         });
     }
@@ -55,7 +49,8 @@ const registerUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
     try {
-        const { emailId, password } = req.body;
+        const emailId = req.body.emailId?.trim().toLowerCase();
+        const { password } = req.body;
 
         // Use a generic error message to avoid leaking whether the email exists.
         if (!emailId || !password)
@@ -74,13 +69,6 @@ const loginUser = async (req, res) => {
             process.env.JWT_SECRET,
             { expiresIn: "1h" }
         );
-        const reply = {
-            _id: userData._id,
-            firstname: userData.firstname,
-            lastname: userData.lastname,
-            emailId: userData.emailId,
-            role: userData.role
-        };
 
         res.cookie("token", token, {
             maxAge: 60 * 60 * 1000,
@@ -89,7 +77,7 @@ const loginUser = async (req, res) => {
             secure: process.env.NODE_ENV === "production",
         });
         res.status(200).json({
-            user: reply,
+            user: serializeUser(userData),
             message: "Login successful"
         });
     }
@@ -127,14 +115,18 @@ const adminRegister = async (req, res) => {
     try {
         authValidate(req.body);
 
-        req.body.role = "admin";
-        const { password, ...data } = req.body;
-        const emailId = req.body.emailId;
+        const normalizedEmailId = req.body.emailId.trim().toLowerCase();
+        const { password, role, ...data } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = await User.create({ password: hashedPassword, ...data });
+        const newUser = await User.create({
+            ...data,
+            emailId: normalizedEmailId,
+            password: hashedPassword,
+            role: "admin",
+        });
 
         const token = jwt.sign(
-            { _id: newUser._id, emailId: emailId, role: newUser.role },
+            { _id: newUser._id, emailId: normalizedEmailId, role: newUser.role },
             process.env.JWT_SECRET,
             { expiresIn: "1h" }
         );
@@ -145,7 +137,10 @@ const adminRegister = async (req, res) => {
             sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             secure: process.env.NODE_ENV === "production",
         });
-        res.status(201).send("Admin created successfully!");
+        res.status(201).json({
+            user: serializeUser(newUser),
+            message: "Admin created successfully!"
+        });
     }
     catch (error) {
         res.status(400).send(error.message);
@@ -192,16 +187,8 @@ const updateProfile = async (req, res) => {
 
         if (!updatedUser) return res.status(404).send("User not found");
 
-        const reply = {
-            _id: updatedUser._id,
-            firstname: updatedUser.firstname,
-            lastname: updatedUser.lastname,
-            emailId: updatedUser.emailId,
-            role: updatedUser.role
-        };
-
         res.status(200).json({
-            user: reply,
+            user: serializeUser(updatedUser),
             message: "Profile updated successfully"
         });
     } catch (error) {
@@ -237,4 +224,50 @@ const resetPassword = async (req, res) => {
     }
 };
 
-export { registerUser, logoutUser, loginUser, adminRegister, deleteUser, updateProfile, resetPassword };
+const uploadProfilePic = async (req, res) => {
+    try {
+        const id = req.userId;
+        if (!id) return res.status(401).send("Invalid token");
+
+        if (!req.file || !req.file.buffer) {
+            return res.status(400).send("No image provided.");
+        }
+        
+        // Use a Promise to wrap the Cloudinary upload stream
+        const uploadStream = () => new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+                { folder: 'zencode_profile_pics' },
+                (error, result) => {
+                    if (result) {
+                        resolve(result);
+                    } else {
+                        reject(error);
+                    }
+                }
+            );
+            stream.end(req.file.buffer);
+        });
+
+        const result = await uploadStream();
+        const profilePicUrl = result.secure_url;
+
+        const updatedUser = await User.findByIdAndUpdate(
+            id,
+            { profilePic: profilePicUrl },
+            { new: true }
+        ).select("-password -__v");
+
+        if (!updatedUser) {
+            return res.status(404).send("User not found");
+        }
+
+        res.status(200).json({
+            user: serializeUser(updatedUser),
+            message: "Profile picture updated successfully"
+        });
+    } catch (error) {
+        res.status(500).send("Unexpected error occurred: " + error.message);
+    }
+};
+
+export { registerUser, logoutUser, loginUser, adminRegister, deleteUser, updateProfile, resetPassword, uploadProfilePic };

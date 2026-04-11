@@ -2,7 +2,6 @@
 // `problemSolved` doubles as the quick source of truth for progress-related UI.
 import mongoose from "mongoose";
 const { Schema } = mongoose;
-import problem from "./problem.js";
 
 const userSchema = new Schema(
     {
@@ -46,6 +45,10 @@ const userSchema = new Schema(
     gender : {
         type : String,
         enum : ["male","female","others"],
+    },
+    profilePic: {
+        type: String,
+        default: ""
     },
     problemSolved : {
         type : [{

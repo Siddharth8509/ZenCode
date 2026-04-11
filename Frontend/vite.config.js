@@ -14,6 +14,60 @@ export default defineConfig({
     },
   },
   build: {
-    cssMinify: false,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) {
+            return;
+          }
+
+          if (id.includes("firebase")) {
+            return "firebase";
+          }
+
+          if (id.includes("@monaco-editor") || id.includes("monaco-editor")) {
+            return "monaco";
+          }
+
+          if (
+            id.includes("react-markdown") ||
+            id.includes("@uiw/react-markdown-preview") ||
+            id.includes("/remark-") ||
+            id.includes("/rehype-") ||
+            id.includes("/micromark") ||
+            id.includes("/mdast-") ||
+            id.includes("/unified/")
+          ) {
+            return "markdown";
+          }
+
+          if (id.includes("react-webcam") || id.includes("react-hook-speech-to-text")) {
+            return "media";
+          }
+
+          if (
+            id.includes("@radix-ui") ||
+            id.includes("@heroui") ||
+            id.includes("@heroicons") ||
+            id.includes("lucide-react") ||
+            id.includes("motion")
+          ) {
+            return "ui-vendor";
+          }
+
+          if (id.includes("react-router")) {
+            return "router";
+          }
+
+          if (
+            id.includes("/react/") ||
+            id.includes("/react-dom/") ||
+            id.includes("/scheduler/")
+          ) {
+            return "react-core";
+          }
+        },
+      },
+    },
   },
 });

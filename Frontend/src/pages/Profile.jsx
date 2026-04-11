@@ -2,8 +2,8 @@
 // It is where users can see momentum, edit basics, and change their password.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { updateProfile, resetPassword } from "../authSlice";
-import { Link } from "react-router-dom";
+import { updateProfile, resetPassword, uploadProfilePic, logoutUser } from "../authSlice";
+import { Link, useNavigate } from "react-router-dom";
 import { gsap } from "gsap";
 import Navbar from "../components/Navbar";
 import axiosClient from "../utils/axiosClient";
@@ -18,6 +18,9 @@ import {
   KeyIcon,
   XMarkIcon,
   MicrophoneIcon,
+  DocumentTextIcon,
+  CameraIcon,
+  ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/solid";
 
 const RING_RADIUS = 74;
@@ -94,7 +97,8 @@ const ActivityCalendar = ({ data }) => {
         </div>
       </div>
       
-      <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+      {/* Fixed-height grid prevents container jumping when switching months with different row counts */}
+      <div className="grid grid-cols-7 gap-1.5 sm:gap-2" style={{ minHeight: '320px' }}>
         {weekDays.map(wd => (
           <div key={wd} className="text-[10px] text-center text-neutral-500 uppercase tracking-wider font-bold mb-1">
             {wd}
@@ -142,6 +146,7 @@ const ActivityCalendar = ({ data }) => {
 export default function Profile() {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const userId = user?._id;
 
   const [solvedCount, setSolvedCount] = useState(0);
@@ -151,11 +156,15 @@ export default function Profile() {
   const [solvedError, setSolvedError] = useState(null);
 
   const [lastInterview, setLastInterview] = useState(null);
+  const [lastResumeAnalysis, setLastResumeAnalysis] = useState(null);
   const [activityData, setActivityData] = useState([]);
   const [activityLoading, setActivityLoading] = useState(true);
 
   const [animatedSolvedCount, setAnimatedSolvedCount] = useState(0);
   const [animatedPercent, setAnimatedPercent] = useState(0);
+
+  const [uploadingPic, setUploadingPic] = useState(false);
+  const fileInputRef = useRef(null);
 
   const tweenValuesRef = useRef({ solved: 0, percent: 0 });
 
@@ -247,6 +256,52 @@ export default function Profile() {
     }
   };
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate size (e.g. 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image is too large! Please choose an image under 5MB.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    // Validate if it's an image
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload a valid image file.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    setUploadingPic(true);
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      await dispatch(uploadProfilePic(formData)).unwrap();
+    } catch (err) {
+      console.error("Failed to upload profile picture:", err);
+      alert(err || "Upload failed. Please try a standard JPG/PNG image under 5MB.");
+    } finally {
+      setUploadingPic(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleLogoutClick = async () => {
+    try {
+      await dispatch(logoutUser()).unwrap();
+      navigate("/login", {
+        state: { toast: { type: "success", message: "Logged out successfully." } },
+      });
+    } catch (error) {
+      navigate("/login", {
+        state: { toast: { type: "error", message: error || "Logout failed." } },
+      });
+    }
+  };
+
   const progressPercent = useMemo(() => {
     if (!totalProblems) return 0;
     return Math.round((solvedCount / totalProblems) * 100);
@@ -298,6 +353,18 @@ export default function Profile() {
           if (!isCancelled && docs.length > 0) {
             setLastInterview(docs[0]);
           }
+        }
+
+        // Fetch the latest resume analysis
+        try {
+          const resumeRes = await axiosClient.get("/resume-analyzer/history");
+          const resumeHistory = Array.isArray(resumeRes.data?.history) ? resumeRes.data.history : [];
+          if (!isCancelled && resumeHistory.length > 0) {
+            setLastResumeAnalysis(resumeHistory[0]);
+          }
+        } catch (resumeErr) {
+          // Silently ignore - resume history may not exist
+          console.error("Error fetching resume history:", resumeErr);
         }
       } catch (err) {
         console.error("Error fetching extra profile data:", err);
@@ -361,9 +428,8 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-orange-500/20">
-      <Navbar />
 
-      <div className="relative pt-28 pb-20 overflow-hidden">
+      <div className="relative pt-12 pb-20 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-24 left-[-10%] w-[50%] h-[50%] bg-orange-400/30 blur-[140px] rounded-full" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-rose-400/30 blur-[140px] rounded-full" />
@@ -372,11 +438,31 @@ export default function Profile() {
         <div className="relative z-10 container mx-auto px-6">
           <div className="glass-panel rounded-3xl border border-white/10 p-8 md:p-10 mb-8">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
-              <div className="relative">
-                <div className="h-28 w-28 rounded-2xl bg-gradient-to-br from-orange-500/40 to-red-500/30 flex items-center justify-center text-5xl font-bold text-white shadow-2xl border border-white/10">
-                  {initials}
+              <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                <div className="h-28 w-28 rounded-2xl bg-gradient-to-br from-orange-500/40 to-red-500/30 flex items-center justify-center text-5xl font-bold text-white shadow-2xl border border-white/10 overflow-hidden relative">
+                  {user?.profilePic ? (
+                    <img src={user.profilePic} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    initials
+                  )}
+                  {uploadingPic && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm z-10">
+                      <span className="loading loading-spinner loading-md text-orange-400"></span>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 backdrop-blur-[2px]">
+                    <CameraIcon className="h-8 w-8 text-white/80" />
+                  </div>
                 </div>
-                <div className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-emerald-500 border-4 border-neutral-950 flex items-center justify-center">
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={fileInputRef}
+                  className="hidden"
+                  onChange={handleImageUpload}
+                  disabled={uploadingPic}
+                />
+                <div className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-emerald-500 border-4 border-neutral-950 flex items-center justify-center z-30">
                   <span className="text-[10px] font-bold">OK</span>
                 </div>
               </div>
@@ -514,6 +600,15 @@ export default function Profile() {
                   <div className="text-lg font-semibold break-all">{user?.emailId || "--"}</div>
                 </div>
               </div>
+              <div className="mt-4 pt-4 border-t border-white/5">
+                <button
+                  onClick={handleLogoutClick}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 font-semibold text-sm transition-colors"
+                >
+                  <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                  Logout
+                </button>
+              </div>
             </div>
           </div>
 
@@ -572,6 +667,7 @@ export default function Profile() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            {/* Activity Graph */}
             <div className="glass-panel p-6 rounded-2xl border border-white/10">
               <div className="flex items-center gap-2 mb-5">
                 <CalendarDaysIcon className="h-5 w-5 text-emerald-400" />
@@ -580,20 +676,21 @@ export default function Profile() {
               {activityLoading ? <p className="text-sm text-neutral-500">Loading activity...</p> : <ActivityCalendar data={activityData} />}
             </div>
 
-            <div className="glass-panel p-6 rounded-2xl border border-white/10">
+            {/* Last Interview - overflow-hidden prevents content spilling */}
+            <div className="glass-panel p-6 rounded-2xl border border-white/10 overflow-hidden">
               <div className="flex items-center gap-2 mb-5">
                 <MicrophoneIcon className="h-5 w-5 text-blue-400" />
                 <span className="text-sm font-semibold uppercase tracking-[0.15em] text-neutral-400">Last Interview</span>
               </div>
               {lastInterview ? (
-                <div className="flex flex-col h-full gap-4 pb-2">
-                  <div className="p-5 rounded-2xl bg-black/60 border border-white/5 flex gap-5 items-center flex-1">
-                      <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex flex-col items-center justify-center border border-white/10 shadow-lg">
+                <div className="flex flex-col gap-4 pb-2">
+                  <div className="p-5 rounded-2xl bg-black/60 border border-white/5 flex gap-5 items-center overflow-hidden">
+                      <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex flex-col items-center justify-center border border-white/10 shadow-lg shrink-0">
                         <MicrophoneIcon className="h-6 w-6 text-blue-400 mb-0.5" />
                       </div>
-                      <div>
-                        <div className="text-lg font-bold tracking-wide">{lastInterview.jobRole || "Mock Interview"}</div>
-                        <div className="text-sm text-neutral-400 mt-0.5 font-medium">
+                      <div className="min-w-0">
+                        <div className="text-lg font-bold tracking-wide truncate">{lastInterview.jobRole || "Mock Interview"}</div>
+                        <div className="text-sm text-neutral-400 mt-0.5 font-medium truncate">
                           {lastInterview.createdAt ? new Date(lastInterview.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "--"}
                         </div>
                       </div>
@@ -603,12 +700,49 @@ export default function Profile() {
                   </Link>
                 </div>
               ) : (
-                <div className="p-4 rounded-xl bg-black/60 border border-white/5 text-neutral-400 text-sm h-full flex flex-col items-center justify-center min-h-[160px]">
+                <div className="p-4 rounded-xl bg-black/60 border border-white/5 text-neutral-400 text-sm flex flex-col items-center justify-center min-h-[160px]">
                   No interviews completed yet.
                   <Link to="/mock-interview" className="mt-3 text-orange-400 hover:text-orange-300 font-semibold underline underline-offset-2">Practice Now</Link>
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Last Resume Analysis */}
+          <div className="glass-panel p-6 rounded-2xl border border-white/10 mt-6">
+            <div className="flex items-center gap-2 mb-5">
+              <DocumentTextIcon className="h-5 w-5 text-orange-400" />
+              <span className="text-sm font-semibold uppercase tracking-[0.15em] text-neutral-400">Last Resume Analysis</span>
+            </div>
+            {lastResumeAnalysis ? (
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="p-5 rounded-2xl bg-black/60 border border-white/5 flex gap-5 items-center flex-1 min-w-0 overflow-hidden">
+                  <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/20 flex flex-col items-center justify-center border border-white/10 shadow-lg shrink-0">
+                    <DocumentTextIcon className="h-6 w-6 text-orange-400 mb-0.5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-lg font-bold tracking-wide truncate">{lastResumeAnalysis.candidateName || lastResumeAnalysis.fileName || "Resume"}</div>
+                    <div className="text-sm text-neutral-400 mt-0.5 font-medium truncate">
+                      {lastResumeAnalysis.targetRole || "General role"} — Score: {lastResumeAnalysis.resumeScore || 0}/100
+                    </div>
+                    <div className="text-xs text-neutral-500 mt-1">
+                      {lastResumeAnalysis.createdAt ? new Date(lastResumeAnalysis.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}
+                    </div>
+                  </div>
+                </div>
+                <Link
+                  to={`/ai-analyzer/report/${lastResumeAnalysis._id}`}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-gradient-to-r from-orange-500/10 to-red-500/10 hover:from-orange-500/20 hover:to-red-500/20 border border-white/10 hover:border-white/20 text-sm font-bold text-white transition-all shadow-md hover:shadow-lg shrink-0"
+                >
+                  View Full Report →
+                </Link>
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-black/60 border border-white/5 text-neutral-400 text-sm flex flex-col items-center justify-center min-h-[120px]">
+                No resume analyses yet.
+                <Link to="/ai-analyzer" className="mt-3 text-orange-400 hover:text-orange-300 font-semibold underline underline-offset-2">Analyze Resume</Link>
+              </div>
+            )}
           </div>
         </div>
       </div>

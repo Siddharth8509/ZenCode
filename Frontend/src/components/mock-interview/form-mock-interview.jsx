@@ -67,36 +67,45 @@ export const FormMockInterview = ({ initialData }) => {
 
   const cleanAiResponse = (responseText) => {
     let cleanText = responseText.trim();
-    cleanText = cleanText.replace(/(json|```|`)/g, "");
-    const jsonArrayMatch = cleanText.match(/\[.*\]/s);
-    if (jsonArrayMatch) {
-      cleanText = jsonArrayMatch[0];
-    } else {
-      throw new Error("No JSON array found in response");
-    }
+
+    // Try direct parse first (works when responseMimeType is application/json)
     try {
-      return JSON.parse(cleanText);
-    } catch (error) {
-      throw new Error("Invalid JSON format: " + error?.message);
+      const parsed = JSON.parse(cleanText);
+      if (Array.isArray(parsed)) return parsed;
+      // If Gemini wraps it in an object, try to find the array inside
+      const keys = Object.keys(parsed);
+      for (const key of keys) {
+        if (Array.isArray(parsed[key])) return parsed[key];
+      }
+    } catch {
+      // Not valid JSON yet, try cleaning
     }
+
+    // Fallback: strip markdown code fences and extract array
+    cleanText = cleanText.replace(/```(?:json)?\s*/gi, "").replace(/```/g, "").trim();
+    const jsonArrayMatch = cleanText.match(/\[[\s\S]*\]/);
+    if (jsonArrayMatch) {
+      try {
+        return JSON.parse(jsonArrayMatch[0]);
+      } catch (error) {
+        throw new Error("Invalid JSON format: " + error?.message);
+      }
+    }
+
+    throw new Error("No JSON array found in response");
   };
 
   const generateAiResponse = async (data) => {
     const prompt = `
-        As an experienced prompt engineer, generate a JSON array containing 8 technical interview questions along with detailed answers based on the following job information. Each object in the array should have the fields "question" and "answer", formatted as follows:
+        Generate a JSON array of 8 technical interview questions with concise answers (2-4 sentences each) based on this job info:
 
-        [
-          { "question": "<Question text>", "answer": "<Answer text>" },
-          ...
-        ]
+        - Position: ${data?.position}
+        - Description: ${data?.description}
+        - Experience: ${data?.experience} years
+        - Tech Stack: ${data?.techStack}
 
-        Job Information:
-        - Job Position: ${data?.position}
-        - Job Description: ${data?.description}
-        - Years of Experience Required: ${data?.experience}
-        - Tech Stacks: ${data?.techStack}
-
-        The questions should assess skills in ${data?.techStack} development and best practices, problem-solving, and experience handling complex requirements. Please format the output strictly as an array of JSON objects without any additional labels, code blocks, or explanations. Return only the JSON array with questions and answers.
+        Return ONLY a JSON array like: [{"question": "...", "answer": "..."}]
+        Keep answers brief but informative. No markdown, no code blocks, no extra text.
         `;
 
     const aiResult = await chatSession.sendMessage(prompt);

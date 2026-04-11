@@ -8,6 +8,10 @@ import axiosClient from "./utils/axiosClient";
 const extractError = (error, fallback) =>
   error.response?.data?.message || error.response?.data || fallback;
 
+const setUserState = (state, payload) => {
+  state.user = payload ? { ...(state.user || {}), ...payload } : null;
+};
+
 // Signup and login both return the user payload, so the UI can treat them as "session established".
 export const registerUser = createAsyncThunk(
   "auth/register",
@@ -70,6 +74,22 @@ export const updateProfile = createAsyncThunk(
   }
 );
 
+export const uploadProfilePic = createAsyncThunk(
+  "auth/uploadProfilePic",
+  async (formData, { rejectWithValue }) => {
+    try {
+      const { data } = await axiosClient.post("/user/profile-pic", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return data.user;
+    } catch (error) {
+      return rejectWithValue(extractError(error, "Profile picture upload failed"));
+    }
+  }
+);
+
 export const resetPassword = createAsyncThunk(
   "auth/resetPassword",
   async (passwordData, { rejectWithValue }) => {
@@ -100,7 +120,7 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(registerUser.fulfilled, (state, action) => {
-        state.user = action.payload;
+        setUserState(state, action.payload);
         state.isAuthenticated = true;
         state.loading = false;
       })
@@ -117,7 +137,7 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(loginUser.fulfilled, (state, action) => {
-        state.user = action.payload;
+        setUserState(state, action.payload);
         state.isAuthenticated = true;
         state.loading = false;
       })
@@ -133,7 +153,7 @@ const authSlice = createSlice({
         state.loading = true;
       })
       .addCase(checkAuth.fulfilled, (state, action) => {
-        state.user = action.payload;
+        setUserState(state, action.payload);
         state.isAuthenticated = true;
         state.loading = false;
       })
@@ -159,29 +179,34 @@ const authSlice = createSlice({
 
       // UPDATE PROFILE
       .addCase(updateProfile.pending, (state) => {
-        state.loading = true;
         state.error = null;
       })
       .addCase(updateProfile.fulfilled, (state, action) => {
-        state.user = action.payload;
-        state.loading = false;
+        setUserState(state, action.payload);
       })
       .addCase(updateProfile.rejected, (state, action) => {
-        state.loading = false;
         state.error = action.payload;
       })
 
       // RESET PASSWORD
       .addCase(resetPassword.pending, (state) => {
-        state.loading = true;
         state.error = null;
       })
       .addCase(resetPassword.fulfilled, (state) => {
-        state.loading = false;
         state.error = null;
       })
       .addCase(resetPassword.rejected, (state, action) => {
-        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // UPLOAD PROFILE PIC
+      .addCase(uploadProfilePic.pending, (state) => {
+        state.error = null;
+      })
+      .addCase(uploadProfilePic.fulfilled, (state, action) => {
+        setUserState(state, action.payload);
+      })
+      .addCase(uploadProfilePic.rejected, (state, action) => {
         state.error = action.payload;
       });
   },

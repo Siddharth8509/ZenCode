@@ -1,39 +1,53 @@
 // App is the routing shell for ZenCode.
 // It also restores the logged-in session once at startup so route guards can behave correctly.
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import './App.css'
-import Signupform from './pages/Signupform';
-import Loginpage from './pages/Loginpage';
-import Homepage from './pages/Homepage';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { checkAuth } from './authSlice';
-import Problemset from './pages/Problemset';
-import Adminpage from './pages/Adminpage';
-import Problempage from './pages/Problempage';
-import Profile from './pages/Profile';
 import BackendWakeScreen from './components/BackendWakeScreen';
-import { Generate } from './components/mock-interview/generate';
-import { Dashboard } from './pages/mock-interview/dashboard';
-import { CreateEditPage } from './pages/mock-interview/create-edit-page';
-import { MockLoadPage } from './pages/mock-interview/mock-load-page';
-import { MockInterviewPage } from './pages/mock-interview/mock-interview-page';
-import { Feedback } from './pages/mock-interview/feedback';
-import AIAnalyzer from './pages/AIAnalyzer';
+import Navbar from './components/Navbar';
+const Signupform = lazy(() => import('./pages/Signupform'));
+const Loginpage = lazy(() => import('./pages/Loginpage'));
+const Homepage = lazy(() => import('./pages/Homepage'));
+const Problemset = lazy(() => import('./pages/Problemset'));
+const Adminpage = lazy(() => import('./pages/Adminpage'));
+const Problempage = lazy(() => import('./pages/Problempage'));
+const Profile = lazy(() => import('./pages/Profile'));
+const AIAnalyzer = lazy(() => import('./pages/AIAnalyzer'));
+const AIAnalyzerReport = lazy(() => import('./pages/AIAnalyzerReport'));
 
-// Aptitude Imports
-import AptitudeHome from './pages/aptitude/pages/Home';
-import AptitudePlatform from './pages/aptitude/pages/AptitudePlatform';
-import QuestionDetail from './pages/aptitude/pages/QuestionDetail';
-import MockPapers from './pages/aptitude/pages/MockPapers';
-import Learn from './pages/aptitude/pages/Learn';
-import AdminDashboardAptitude from './pages/aptitude/admin/AdminDashboard';
-import AdminUploadAptitude from './pages/aptitude/admin/AdminUpload';
-import AdminEditAptitude from './pages/aptitude/admin/AdminEdit';
-import AddLecture from './pages/aptitude/admin/AddLecture';
-import AdminPdfUpload from './pages/aptitude/admin/AdminPdfUpload';
-import AdminPdfEdit from './pages/aptitude/admin/AdminPdfEdit';
-import StudentDashboard from './pages/aptitude/components/StudentDashboard';
+const Generate = lazy(() =>
+  import('./components/mock-interview/generate').then((module) => ({ default: module.Generate }))
+);
+const Dashboard = lazy(() =>
+  import('./pages/mock-interview/dashboard').then((module) => ({ default: module.Dashboard }))
+);
+const CreateEditPage = lazy(() =>
+  import('./pages/mock-interview/create-edit-page').then((module) => ({ default: module.CreateEditPage }))
+);
+const MockLoadPage = lazy(() =>
+  import('./pages/mock-interview/mock-load-page').then((module) => ({ default: module.MockLoadPage }))
+);
+const MockInterviewPage = lazy(() =>
+  import('./pages/mock-interview/mock-interview-page').then((module) => ({ default: module.MockInterviewPage }))
+);
+const Feedback = lazy(() =>
+  import('./pages/mock-interview/feedback').then((module) => ({ default: module.Feedback }))
+);
+
+const AptitudeHome = lazy(() => import('./pages/aptitude/pages/Home'));
+const AptitudePlatform = lazy(() => import('./pages/aptitude/pages/AptitudePlatform'));
+const QuestionDetail = lazy(() => import('./pages/aptitude/pages/QuestionDetail'));
+const MockPapers = lazy(() => import('./pages/aptitude/pages/MockPapers'));
+const Learn = lazy(() => import('./pages/aptitude/pages/Learn'));
+const AdminDashboardAptitude = lazy(() => import('./pages/aptitude/admin/AdminDashboard'));
+const AdminUploadAptitude = lazy(() => import('./pages/aptitude/admin/AdminUpload'));
+const AdminEditAptitude = lazy(() => import('./pages/aptitude/admin/AdminEdit'));
+const AddLecture = lazy(() => import('./pages/aptitude/admin/AddLecture'));
+const AdminPdfUpload = lazy(() => import('./pages/aptitude/admin/AdminPdfUpload'));
+const AdminPdfEdit = lazy(() => import('./pages/aptitude/admin/AdminPdfEdit'));
+const StudentDashboard = lazy(() => import('./pages/aptitude/components/StudentDashboard'));
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:3000").replace(/\/+$/, "");
 const API_HOSTNAME = (() => {
@@ -67,12 +81,23 @@ async function pingBackendHealth() {
   }
 }
 
+function RouteFallback({ showGlobalNavbar = true }) {
+  return (
+    <div className={`${showGlobalNavbar ? "min-h-[calc(100vh-64px)]" : "min-h-screen"} bg-black text-neutral-300 flex items-center justify-center px-6`}>
+      <div className="glass-panel px-6 py-4 rounded-2xl border border-white/10">Loading page...</div>
+    </div>
+  );
+}
+
 function App() {
   const { isAuthenticated, loading } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
+  const location = useLocation();
   const hasStartedAuthCheckRef = useRef(false);
   const [backendReady, setBackendReady] = useState(!/(?:^|\.)(?:onrender|render)\.com/i.test(API_HOSTNAME));
   const [secondsRemaining, setSecondsRemaining] = useState(COLD_START_WAIT_SECONDS);
+  const isProblemIdeRoute = /^\/problem\/[^/]+$/.test(location.pathname);
+  const showGlobalNavbar = !isProblemIdeRoute;
 
   useEffect(() => {
     if (backendReady || hasStartedAuthCheckRef.current) return;
@@ -133,46 +158,52 @@ function App() {
 
   return (
     <div className='app'>
-      <Routes>
-        <Route path="/" element={<Homepage />} />
-        <Route path="/login" element={isAuthenticated ? <Navigate to="/problemset" /> : <Loginpage />} />
-        <Route path="/signup" element={isAuthenticated ? <Navigate to="/problemset" /> : <Signupform />} />
-        <Route path="/problemset" element={isAuthenticated ? <Problemset /> : <Navigate to="/login" />} />
-        <Route path="/admin" element={isAuthenticated ? <Adminpage /> : <Navigate to="/login" />} />
-        <Route path="/profile" element={isAuthenticated ? <Profile /> : <Navigate to="/login" />} />
-        <Route path="/problem/:id" element={isAuthenticated ? <Problempage /> : <Navigate to="/login" />} />
-        <Route path="/ai-analyzer" element={isAuthenticated ? <AIAnalyzer /> : <Navigate to="/login" />} />
-        <Route path="/smart-resume-analyzer" element={<Navigate to="/ai-analyzer" replace />} />
-        <Route path="/resume-maker" element={<Navigate to="/ai-analyzer" replace />} />
+      {/* Global Navbar — always visible */}
+      {showGlobalNavbar && <Navbar />}
+      <div style={{ paddingTop: showGlobalNavbar ? '64px' : '0px' }}>
+        <Suspense fallback={<RouteFallback showGlobalNavbar={showGlobalNavbar} />}>
+          <Routes>
+          <Route path="/" element={<Homepage />} />
+          <Route path="/login" element={isAuthenticated ? <Navigate to="/problemset" /> : <Loginpage />} />
+          <Route path="/signup" element={isAuthenticated ? <Navigate to="/problemset" /> : <Signupform />} />
+          <Route path="/problemset" element={isAuthenticated ? <Problemset /> : <Navigate to="/login" />} />
+          <Route path="/admin" element={isAuthenticated ? <Adminpage /> : <Navigate to="/login" />} />
+          <Route path="/profile" element={isAuthenticated ? <Profile /> : <Navigate to="/login" />} />
+          <Route path="/problem/:id" element={isAuthenticated ? <Problempage /> : <Navigate to="/login" />} />
+          <Route path="/ai-analyzer" element={isAuthenticated ? <AIAnalyzer /> : <Navigate to="/login" />} />
+          <Route path="/ai-analyzer/report/:id" element={isAuthenticated ? <AIAnalyzerReport /> : <Navigate to="/login" />} />
+          <Route path="/smart-resume-analyzer" element={<Navigate to="/ai-analyzer" replace />} />
+          <Route path="/resume-maker" element={<Navigate to="/ai-analyzer" replace />} />
 
-        <Route path="/mock-interview" element={isAuthenticated ? <Generate /> : <Navigate to="/login" />}>
-          <Route index element={<Dashboard />} />
-          <Route path="create" element={<CreateEditPage />} />
-          <Route path="interview/:interviewId" element={<MockLoadPage />} />
-          <Route path="interview/:interviewId/start" element={<MockInterviewPage />} />
-          <Route path="feedback/:interviewId" element={<Feedback />} />
-        </Route>
+          <Route path="/mock-interview" element={isAuthenticated ? <Generate /> : <Navigate to="/login" />}>
+            <Route index element={<Dashboard />} />
+            <Route path="create" element={<CreateEditPage />} />
+            <Route path="interview/:interviewId" element={<MockLoadPage />} />
+            <Route path="interview/:interviewId/start" element={<MockInterviewPage />} />
+            <Route path="feedback/:interviewId" element={<Feedback />} />
+          </Route>
 
-        {/* Aptitude Routes */}
-        <Route path="/aptitude">
-          <Route index element={isAuthenticated ? <AptitudeHome /> : <Navigate to="/login" />} />
-          <Route path="platform" element={isAuthenticated ? <AptitudePlatform /> : <Navigate to="/login" />} />
-          <Route path="question/:id" element={isAuthenticated ? <QuestionDetail /> : <Navigate to="/login" />} />
-          <Route path="mock" element={isAuthenticated ? <MockPapers /> : <Navigate to="/login" />} />
-          <Route path="learn/:courseType" element={isAuthenticated ? <Learn /> : <Navigate to="/login" />} />
-          <Route path="learn" element={<Navigate to="/aptitude/learn/aptitude" replace />} />
-          <Route path="dashboard" element={isAuthenticated ? <StudentDashboard /> : <Navigate to="/login" />} />
-          
-          <Route path="admin" element={isAuthenticated ? <AdminDashboardAptitude /> : <Navigate to="/login" />} />
-          <Route path="admin/add" element={isAuthenticated ? <AdminUploadAptitude /> : <Navigate to="/login" />} />
-          <Route path="admin/edit/:id" element={isAuthenticated ? <AdminEditAptitude /> : <Navigate to="/login" />} />
-          <Route path="admin/add-lecture" element={isAuthenticated ? <AddLecture /> : <Navigate to="/login" />} />
-          <Route path="admin/upload-pdf" element={isAuthenticated ? <AdminPdfUpload /> : <Navigate to="/login" />} />
-          <Route path="admin/edit-pdf/:id" element={isAuthenticated ? <AdminPdfEdit /> : <Navigate to="/login" />} />
-        </Route>
-      </Routes>
+          {/* Aptitude Routes */}
+          <Route path="/aptitude">
+            <Route index element={isAuthenticated ? <AptitudeHome /> : <Navigate to="/login" />} />
+            <Route path="platform" element={isAuthenticated ? <AptitudePlatform /> : <Navigate to="/login" />} />
+            <Route path="question/:id" element={isAuthenticated ? <QuestionDetail /> : <Navigate to="/login" />} />
+            <Route path="mock" element={isAuthenticated ? <MockPapers /> : <Navigate to="/login" />} />
+            <Route path="learn/:courseType" element={isAuthenticated ? <Learn /> : <Navigate to="/login" />} />
+            <Route path="learn" element={<Navigate to="/aptitude/learn/aptitude" replace />} />
+            <Route path="dashboard" element={isAuthenticated ? <StudentDashboard /> : <Navigate to="/login" />} />
+            
+            <Route path="admin" element={isAuthenticated ? <AdminDashboardAptitude /> : <Navigate to="/login" />} />
+            <Route path="admin/add" element={isAuthenticated ? <AdminUploadAptitude /> : <Navigate to="/login" />} />
+            <Route path="admin/edit/:id" element={isAuthenticated ? <AdminEditAptitude /> : <Navigate to="/login" />} />
+            <Route path="admin/add-lecture" element={isAuthenticated ? <AddLecture /> : <Navigate to="/login" />} />
+            <Route path="admin/upload-pdf" element={isAuthenticated ? <AdminPdfUpload /> : <Navigate to="/login" />} />
+            <Route path="admin/edit-pdf/:id" element={isAuthenticated ? <AdminPdfEdit /> : <Navigate to="/login" />} />
+          </Route>
+          </Routes>
+        </Suspense>
+      </div>
     </div>
-
   );
 }
 

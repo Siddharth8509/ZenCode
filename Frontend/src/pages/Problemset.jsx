@@ -4,7 +4,6 @@ import { useSelector } from "react-redux";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosClient from "../utils/axiosClient";
-import Navbar from "../components/Navbar";
 import Loader from "../components/Loader";
 
 const DIFFICULTY_ORDER = ["easy", "medium", "hard"];
@@ -277,9 +276,8 @@ export default function Problemset() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <Navbar />
 
-      <div className="container mx-auto px-5 pt-24 pb-10">
+      <div className="container mx-auto px-5 pt-8 pb-10">
         <div className="flex flex-col gap-6 mb-8">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>

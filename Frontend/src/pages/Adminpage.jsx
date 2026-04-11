@@ -4,7 +4,6 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
 import axiosClient from "../utils/axiosClient";
-import Navbar from "../components/Navbar";
 
 const adminSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
@@ -153,7 +152,6 @@ export default function Adminpage() {
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-orange-500/20 pb-24">
-      <Navbar />
 
       {/* Background */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -161,7 +159,7 @@ export default function Adminpage() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-rose-400/30 blur-[150px] rounded-full" />
       </div>
 
-      <div className="container mx-auto px-6 pt-24 relative z-10">
+      <div className="container mx-auto px-6 pt-4 relative z-10">
         <h1 className="text-4xl font-semibold text-center mb-4 bg-gradient-to-r from-orange-500 via-red-500 to-amber-500 bg-clip-text text-transparent">
           Admin Panel
         </h1>

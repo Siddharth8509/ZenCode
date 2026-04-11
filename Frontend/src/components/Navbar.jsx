@@ -67,9 +67,15 @@ export default function Navbar() {
                     {user ? (
                         <div className="dropdown dropdown-end">
                             <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar placeholder">
-                                <div className="bg-neutral-700 text-neutral-content rounded-full w-10">
-                                    <span className="text-lg">{user.firstname[0].toUpperCase()}</span>
-                                </div>
+                                {user.profilePic ? (
+                                    <div className="w-10 rounded-full border border-neutral-700 overflow-hidden">
+                                        <img src={user.profilePic} alt="Profile" className="object-cover w-full h-full" />
+                                    </div>
+                                ) : (
+                                    <div className="bg-neutral-700 text-neutral-content rounded-full w-10">
+                                        <span className="text-lg">{user.firstname[0].toUpperCase()}</span>
+                                    </div>
+                                )}
                             </div>
                             <ul tabIndex={0} className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-neutral-800 rounded-box w-52 border border-neutral-700">
                                 <li className="menu-title text-neutral-400">Hello, {user.firstname}</li>

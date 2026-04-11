@@ -1,4 +1,4 @@
-import { getLanguageId, executeCodeAndEvaluate } from "../utils/problem.utils.js";
+import { getLanguageId, buildSourceCode, executeCodeAndEvaluate } from "../utils/problem.utils.js";
 import mongoose from "mongoose";
 import problem from "../model/problem.js";
 import user from "../model/user.js";
@@ -50,23 +50,38 @@ const submitCode = async (req, res) => {
         if (!problemData)
             return res.status(404).send("Invalid problemId");
 
+        const rawProblemData = await problem.collection.findOne({ _id: new mongoose.Types.ObjectId(problemId) });
+        const resolvedProblemData = rawProblemData
+            ? {
+                ...problemData.toObject(),
+                driverCode: Array.isArray(rawProblemData.driverCode) ? rawProblemData.driverCode : problemData.driverCode,
+                hiddenTestCase: Array.isArray(rawProblemData.hiddenTestCase) ? rawProblemData.hiddenTestCase : problemData.hiddenTestCase,
+                visibleTestCase: Array.isArray(rawProblemData.visibleTestCase) ? rawProblemData.visibleTestCase : problemData.visibleTestCase,
+            }
+            : problemData;
+
+        const hiddenTestCases = Array.isArray(resolvedProblemData.hiddenTestCase) ? resolvedProblemData.hiddenTestCase : [];
+        const languageId = getLanguageId(language);
+        if (!languageId)
+            return res.status(400).send("Unsupported language");
+
         const submitedProblem = await submission.create({
             userId: userId,
             problemId: problemId,
             code: code,
             language: language,
             status: "pending",
-            testCasesTotal: problemData.hiddenTestCase.length
+            testCasesTotal: hiddenTestCases.length
         });
-        const languageId = getLanguageId(language);
+        const executableCode = buildSourceCode(resolvedProblemData, language, code);
 
         // Uses hidden test cases per user's logic
-        const testResults = await executeCodeAndEvaluate(code, languageId, problemData.hiddenTestCase);
+        const testResults = await executeCodeAndEvaluate(executableCode, languageId, hiddenTestCases);
 
         let runtime = 0;
         let memory = 0;
         let testCasesPassed = 0;
-        let problemStatus = "accepted"
+        let problemStatus = "accepted";
         let errorMessage = null;
 
         for (const test of testResults) {
@@ -77,7 +92,7 @@ const submitCode = async (req, res) => {
             }
             else {
                 errorMessage = test.error || "Execution error";
-                problemStatus = test.raw_status_id === 4 ? "wrong_answer" : "runtime_error";
+                problemStatus = mapJudgeStatus(test.raw_status_id);
                 break;
             }
         }
@@ -90,19 +105,38 @@ const submitCode = async (req, res) => {
         submitedProblem.status = problemStatus;
 
         // Only mark as solved when all test cases pass.
-        if (problemStatus === "accepted" && !userInfo.problemSolved.includes(problemData._id)) {
-            userInfo.problemSolved.push(problemData);
+        const hasSolvedProblem = Array.isArray(userInfo.problemSolved)
+            && userInfo.problemSolved.some((solvedProblemId) => String(solvedProblemId) === String(problemData._id));
+
+        if (problemStatus === "accepted" && !hasSolvedProblem) {
+            userInfo.problemSolved.push(problemData._id);
             await userInfo.save();
         }
 
+        problemData.totalSubmissions = Number(problemData.totalSubmissions || 0) + 1;
+        if (problemStatus === "accepted") {
+            problemData.acceptedSubmissions = Number(problemData.acceptedSubmissions || 0) + 1;
+        }
+        problemData.acceptanceRate = problemData.totalSubmissions > 0
+            ? Number(((problemData.acceptedSubmissions / problemData.totalSubmissions) * 100).toFixed(2))
+            : 0;
 
+        await problemData.save();
         await submitedProblem.save();
         res.status(201).json({
             message: "Problem submitted successfully",
+            status: submitedProblem.status,
+            problemStatus: submitedProblem.status,
+            runtime: submitedProblem.runtime,
+            memory: submitedProblem.memory,
+            errorMessage: submitedProblem.errorMessage,
+            testCasesPassed: submitedProblem.testCasesPassed,
+            testCasesTotal: submitedProblem.testCasesTotal,
             submission: submitedProblem
         });
     }
     catch (error) {
+        console.error("Submit code error:", error);
         res.status(500).send("Internal server error" + error.message);
     }
 }
@@ -131,10 +165,25 @@ const runCode = async (req, res) => {
         if (!problemData)
             return res.status(404).send("Invalid problemId");
 
+        const rawProblemData = await problem.collection.findOne({ _id: new mongoose.Types.ObjectId(problemId) });
+        const resolvedProblemData = rawProblemData
+            ? {
+                ...problemData.toObject(),
+                driverCode: Array.isArray(rawProblemData.driverCode) ? rawProblemData.driverCode : problemData.driverCode,
+                hiddenTestCase: Array.isArray(rawProblemData.hiddenTestCase) ? rawProblemData.hiddenTestCase : problemData.hiddenTestCase,
+                visibleTestCase: Array.isArray(rawProblemData.visibleTestCase) ? rawProblemData.visibleTestCase : problemData.visibleTestCase,
+            }
+            : problemData;
+
         const languageId = getLanguageId(language);
+        if (!languageId)
+            return res.status(400).send("Unsupported language");
+
+        const executableCode = buildSourceCode(resolvedProblemData, language, code);
+        const visibleTestCases = Array.isArray(resolvedProblemData.visibleTestCase) ? resolvedProblemData.visibleTestCase : [];
 
         // USE VISIBLE TEST CASES FOR RUN
-        const testResults = await executeCodeAndEvaluate(code, languageId, problemData.visibleTestCase);
+        const testResults = await executeCodeAndEvaluate(executableCode, languageId, visibleTestCases);
         
         // Return detailed results as requested by user's logic
         const detailedResults = testResults.map(test => ({
