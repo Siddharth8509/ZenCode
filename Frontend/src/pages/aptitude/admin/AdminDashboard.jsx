@@ -151,7 +151,7 @@ const AdminDashboard = () => {
                 Lectures ({lectures.length})
               </button> */}
 
-              <button
+              {/* <button
                 onClick={() => {
                   setViewMode("pdfs");
                   setSearchTerm("");
@@ -162,7 +162,7 @@ const AdminDashboard = () => {
                   }`}
               >
                 Mock PDFs ({pdfs.length})
-              </button>
+              </button> */}
             </div>
           </div>
 
@@ -183,12 +183,12 @@ const AdminDashboard = () => {
               <PlusIcon className="w-4 h-4" /> Question
             </Link>
 
-            <Link
+            {/* <Link
               to="/aptitude/admin/upload-pdf"
               className="flex items-center gap-2 px-4 py-2 bg-neutral-900 border border-white/10 rounded-lg text-sm font-bold text-white hover:bg-white/5 transition-all"
             >
               <DocumentTextIcon className="w-4 h-4 text-orange-400" /> Upload PDF
-            </Link>
+            </Link> */}
           </div>
         </div>
 
