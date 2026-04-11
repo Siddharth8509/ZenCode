@@ -307,6 +307,8 @@ export default function Profile() {
     return Math.round((solvedCount / totalProblems) * 100);
   }, [solvedCount, totalProblems]);
 
+  const recentSolvedPreview = useMemo(() => recentSolved.slice(0, 5), [recentSolved]);
+
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -612,60 +614,6 @@ export default function Profile() {
             </div>
           </div>
 
-          <div className="glass-panel p-6 rounded-2xl border border-white/10 mt-6">
-            <div className="flex items-center justify-between gap-3 mb-5">
-              <div className="text-sm font-semibold uppercase tracking-[0.15em] text-neutral-400">
-                Last 5 Solved Questions
-              </div>
-              <span className="text-xs text-neutral-500">Updates every 15s</span>
-            </div>
-
-            {recentSolved.length > 0 ? (
-              <div className="space-y-3">
-                {recentSolved.map((item, index) => (
-                  <div
-                    key={`${item.problemId}-${item.solvedAt}-${index}`}
-                    className="rounded-xl bg-black/60 border border-white/5 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="h-7 w-7 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-semibold flex items-center justify-center shrink-0">
-                        {index + 1}
-                      </span>
-                      <div className="min-w-0">
-                        <div className="font-medium text-white truncate">{item.title}</div>
-                        <div className="text-xs text-neutral-500">Solved</div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 shrink-0">
-                      <div className="text-xs sm:text-sm text-neutral-400">
-                        {item.solvedAt
-                          ? new Date(item.solvedAt).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })
-                          : "--"}
-                      </div>
-                      {item.problemId && (
-                        <Link
-                          to={`/problem/${item.problemId}`}
-                          className="btn btn-xs bg-white/5 border-white/15 text-neutral-300 hover:bg-white/10"
-                        >
-                          Open
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-xl bg-black/60 border border-white/5 p-4 text-neutral-400 text-sm">
-                No solved questions yet.
-              </div>
-            )}
-          </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             {/* Activity Graph */}
             <div className="glass-panel p-6 rounded-2xl border border-white/10">
@@ -710,43 +658,149 @@ export default function Profile() {
 
           {/* Last Resume Analysis */}
           <div className="glass-panel p-6 rounded-2xl border border-white/10 mt-6">
-            <div className="flex items-center gap-2 mb-5">
-              <DocumentTextIcon className="h-5 w-5 text-orange-400" />
-              <span className="text-sm font-semibold uppercase tracking-[0.15em] text-neutral-400">Last Resume Analysis</span>
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-center gap-2">
+                <DocumentTextIcon className="h-5 w-5 text-orange-400" />
+                <div>
+                  <span className="text-sm font-semibold uppercase tracking-[0.15em] text-neutral-400">Last Resume Analysis</span>
+                  <p className="mt-1 text-sm text-neutral-500">Keep your latest resume report close and jump back into the analyzer faster.</p>
+                </div>
+              </div>
+              <Link
+                to="/ai-analyzer"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-orange-400/20 bg-orange-500/10 px-4 py-2 text-sm font-semibold text-orange-100 transition-all hover:border-orange-300/40 hover:bg-orange-500/15 hover:text-white"
+              >
+                Go to Resume Analyzer
+              </Link>
             </div>
             {lastResumeAnalysis ? (
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="p-5 rounded-2xl bg-black/60 border border-white/5 flex gap-5 items-center flex-1 min-w-0 overflow-hidden">
-                  <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/20 flex flex-col items-center justify-center border border-white/10 shadow-lg shrink-0">
-                    <DocumentTextIcon className="h-6 w-6 text-orange-400 mb-0.5" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-lg font-bold tracking-wide truncate">{lastResumeAnalysis.candidateName || lastResumeAnalysis.fileName || "Resume"}</div>
-                    <div className="text-sm text-neutral-400 mt-0.5 font-medium truncate">
-                      {lastResumeAnalysis.targetRole || "General role"} — Score: {lastResumeAnalysis.resumeScore || 0}/100
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
+                <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-orange-500/10 via-black/70 to-black/90 p-5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <div className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-2xl border border-orange-400/20 bg-orange-500/10 shadow-[0_0_35px_rgba(249,115,22,0.12)]">
+                      <span className="text-2xl font-bold text-white">{lastResumeAnalysis.resumeScore || 0}</span>
+                      <span className="text-[11px] uppercase tracking-[0.22em] text-orange-200">Score</span>
                     </div>
-                    <div className="text-xs text-neutral-500 mt-1">
-                      {lastResumeAnalysis.createdAt ? new Date(lastResumeAnalysis.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-300">
+                          {lastResumeAnalysis.targetRole || "General role"}
+                        </span>
+                        {lastResumeAnalysis.createdAt && (
+                          <span className="inline-flex items-center rounded-full border border-white/10 bg-black/40 px-3 py-1 text-xs text-neutral-400">
+                            {new Date(lastResumeAnalysis.createdAt).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-4 text-xl font-bold tracking-wide text-white">
+                        {lastResumeAnalysis.candidateName || lastResumeAnalysis.fileName || "Resume"}
+                      </div>
+                      <div className="mt-2 text-sm text-neutral-400">
+                        Resume score {lastResumeAnalysis.resumeScore || 0}/100 with your latest role targeting and ATS feedback.
+                      </div>
                     </div>
                   </div>
                 </div>
-                <Link
-                  to={`/ai-analyzer/report/${lastResumeAnalysis._id}`}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-gradient-to-r from-orange-500/10 to-red-500/10 hover:from-orange-500/20 hover:to-red-500/20 border border-white/10 hover:border-white/20 text-sm font-bold text-white transition-all shadow-md hover:shadow-lg shrink-0"
-                >
-                  View Full Report →
-                </Link>
+                <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+                  <Link
+                    to={`/ai-analyzer/report/${lastResumeAnalysis._id}`}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-orange-400/25 bg-gradient-to-r from-orange-500/20 to-red-500/10 px-5 py-3 text-sm font-semibold text-white transition-all hover:border-orange-300/40 hover:from-orange-500/25 hover:to-red-500/15"
+                  >
+                    View Full Report
+                  </Link>
+                  <Link
+                    to="/ai-analyzer"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-neutral-200 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white"
+                  >
+                    Run Another Scan
+                  </Link>
+                </div>
               </div>
             ) : (
-              <div className="p-4 rounded-xl bg-black/60 border border-white/5 text-neutral-400 text-sm flex flex-col items-center justify-center min-h-[120px]">
-                No resume analyses yet.
-                <Link to="/ai-analyzer" className="mt-3 text-orange-400 hover:text-orange-300 font-semibold underline underline-offset-2">Analyze Resume</Link>
+              <div className="flex min-h-[160px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-black/40 px-6 py-8 text-center">
+                <div className="rounded-2xl border border-orange-400/20 bg-orange-500/10 p-4">
+                  <DocumentTextIcon className="h-8 w-8 text-orange-300" />
+                </div>
+                <p className="mt-4 text-sm text-neutral-400">No resume analyses yet. Upload one and start building a sharper report.</p>
+                <Link
+                  to="/ai-analyzer"
+                  className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl border border-orange-400/20 bg-orange-500/10 px-4 py-2.5 text-sm font-semibold text-orange-100 transition-all hover:border-orange-300/40 hover:bg-orange-500/15 hover:text-white"
+                >
+                  Analyze Resume
+                </Link>
+              </div>
+            )}
+          </div>
+
+          <div className="glass-panel p-6 rounded-2xl border border-white/10 mt-6">
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <div className="text-sm font-semibold uppercase tracking-[0.15em] text-neutral-400">
+                  Latest 5 Solved Questions
+                </div>
+                <p className="mt-1 text-sm text-neutral-500">
+                  A quick recap of your newest accepted problems, now tucked at the end of the dashboard.
+                </p>
+              </div>
+              <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-neutral-400">
+                {recentSolvedPreview.length}/5 shown
+              </span>
+            </div>
+
+            {recentSolvedPreview.length > 0 ? (
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+                {recentSolvedPreview.map((item, index) => (
+                  <div
+                    key={`${item.problemId}-${item.solvedAt}-${index}`}
+                    className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-emerald-500/10 via-black/70 to-black/90 p-4"
+                  >
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-emerald-400/0 via-emerald-300/50 to-emerald-400/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-500/15 text-xs font-semibold text-emerald-200">
+                        {index + 1}
+                      </span>
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-300">
+                        Solved
+                      </span>
+                    </div>
+
+                    <div className="mt-4 min-h-[3.5rem] text-sm font-semibold leading-6 text-white">
+                      {item.title || "Untitled problem"}
+                    </div>
+
+                    <div className="mt-4 text-xs text-neutral-400">
+                      {item.solvedAt
+                        ? new Date(item.solvedAt).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })
+                        : "Recently solved"}
+                    </div>
+
+                    {item.problemId && (
+                      <Link
+                        to={`/problem/${item.problemId}`}
+                        className="mt-4 inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-200 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white"
+                      >
+                        Open Question
+                      </Link>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-white/10 bg-black/40 p-5 text-sm text-neutral-400">
+                No solved questions yet.
               </div>
             )}
           </div>
         </div>
       </div>
-
       {/* Edit Profile Modal */}
       {isEditProfileOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -902,3 +956,4 @@ export default function Profile() {
     </div>
   );
 }
+

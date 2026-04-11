@@ -13,6 +13,11 @@ export const MockInterviewPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  const handleSubmitInterview = () => {
+    if (!interviewId) return;
+    navigate(`/mock-interview/feedback/${interviewId}`, { replace: true });
+  };
+
   useEffect(() => {
     setIsLoading(true);
     const fetchInterview = async () => {
@@ -57,7 +62,7 @@ export const MockInterviewPage = () => {
         <div>
           <h4 className="text-sm font-semibold text-sky-300 mb-1">How it works</h4>
           <p className="text-sm text-neutral-400 leading-relaxed">
-            Click the mic icon to start recording your answer. Once finished, your response will be evaluated by AI and you'll advance to the next question.
+            Click the mic icon to start recording your answer. Each saved response is analyzed immediately, and you can submit the interview any time after saving at least one answer.
           </p>
           <div className="flex items-center gap-1.5 mt-2 text-xs">
             <ShieldCheckIcon className="w-3.5 h-3.5 text-green-400" />
@@ -68,7 +73,10 @@ export const MockInterviewPage = () => {
 
       {/* Interview session */}
       {interview?.questions && interview.questions.length > 0 && (
-        <QuestionSection questions={interview.questions} />
+        <QuestionSection
+          questions={interview.questions}
+          onSubmitInterview={handleSubmitInterview}
+        />
       )}
     </div>
   );

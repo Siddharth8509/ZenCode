@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
+import {
+  ArrowTopRightOnSquareIcon,
+  ClockIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import axiosClient from "../utils/axiosClient";
 
 const TARGET_ROLES = [
@@ -524,41 +529,73 @@ export default function AIAnalyzer() {
             <div className="rounded-2xl border border-white/10 bg-neutral-950/80 p-6">
               <div className="flex flex-col items-center justify-between gap-2 text-center sm:flex-row sm:text-left">
                 <h2 className="text-xl font-semibold">Recent Analyses</h2>
-                {isHistoryLoading && <span className="text-xs text-neutral-500">Loading...</span>}
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-neutral-400">
+                    {history.length} saved
+                  </span>
+                  {isHistoryLoading && <span className="text-xs text-neutral-500">Loading...</span>}
+                </div>
               </div>
 
               <div className="mt-5 space-y-3">
                 {history.length ? (
                   history.map((item) => (
-                    <div key={item._id} className="rounded-xl border border-white/10 bg-black/70 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-white truncate">{item.candidateName || item.fileName || "Resume"}</div>
-                        <div className="mt-1 text-xs text-neutral-500">
-                          {item.targetRole || "General role"} - Score {item.resumeScore || 0}/100
+                    <div
+                      key={item._id}
+                      className="rounded-2xl border border-white/10 bg-gradient-to-r from-orange-500/[0.08] via-black/80 to-black/80 p-4 sm:p-5"
+                    >
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="flex min-w-0 flex-1 items-start gap-4">
+                          <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl border border-orange-400/20 bg-orange-500/10 shadow-[0_0_30px_rgba(249,115,22,0.08)]">
+                            <span className="text-lg font-semibold text-white">{clampScore(item.resumeScore)}</span>
+                            <span className="text-[10px] uppercase tracking-[0.18em] text-orange-200">Score</span>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-300">
+                                {item.targetRole || "General role"}
+                              </span>
+                              {item.createdAt && (
+                                <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs text-neutral-400">
+                                  <ClockIcon className="h-3.5 w-3.5" />
+                                  {new Date(item.createdAt).toLocaleString()}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-3 font-semibold text-white">
+                              {item.candidateName || item.fileName || "Resume"}
+                            </div>
+                            <div className="mt-1 text-sm text-neutral-400">
+                              Resume report ready with score breakdown, ATS feedback, and improvement suggestions.
+                            </div>
+                          </div>
                         </div>
-                        <div className="mt-1 text-xs text-neutral-600">
-                          {item.createdAt ? new Date(item.createdAt).toLocaleString() : ""}
+
+                        <div className="flex flex-col gap-2 shrink-0 sm:flex-row">
+                          <Link
+                            to={`/ai-analyzer/report/${item._id}`}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-orange-400/25 bg-orange-500/10 px-4 py-2.5 text-sm font-semibold text-orange-100 transition-all hover:border-orange-300/40 hover:bg-orange-500/15 hover:text-white"
+                          >
+                            Open Report
+                            <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteHistory(item._id)}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-rose-200 transition-all hover:border-rose-400/30 hover:bg-rose-500/10 hover:text-rose-100"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                            Delete
+                          </button>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <Link
-                          to={`/ai-analyzer/report/${item._id}`}
-                          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500/10 to-red-500/10 hover:from-orange-500/20 hover:to-red-500/20 border border-white/10 hover:border-white/20 px-4 py-2 text-sm font-semibold text-white transition-all"
-                        >
-                          View Report →
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteHistory(item._id)}
-                          className="text-xs font-semibold text-rose-300 hover:text-rose-200"
-                        >
-                          Delete
-                        </button>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-neutral-500">No resume reports yet.</p>
+                  <div className="rounded-2xl border border-dashed border-white/10 bg-black/40 p-6 text-center">
+                    <p className="text-sm text-neutral-500">No resume reports yet.</p>
+                    <p className="mt-2 text-xs text-neutral-600">Your saved analyses will show up here after the first run.</p>
+                  </div>
                 )}
               </div>
             </div>
