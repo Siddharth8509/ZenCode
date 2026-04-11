@@ -1,17 +1,57 @@
 import { Pdf } from '../../model/aptitude/PdfModel.js';
+import { v2 as cloudinary } from 'cloudinary';
+import axios from 'axios';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+// Cloudinary Configuration for Signing
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+export const getSignature = async (req, res) => {
+    const { folder = 'zencode_pdfs' } = req.query;
+
+    try {
+        const timestamp = Math.round(new Date().getTime() / 1000);
+        const params = {
+            timestamp: timestamp,
+            folder: folder,
+        };
+
+        const signature = cloudinary.utils.api_sign_request(
+            params,
+            process.env.CLOUDINARY_API_SECRET
+        );
+
+        res.status(200).json({
+            signature,
+            timestamp,
+            cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+            api_key: process.env.CLOUDINARY_API_KEY,
+            folder: params.folder
+        });
+    } catch (error) {
+        console.error("Signature Error:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
 
 export const uploadPdfFile = async (req, res) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({ message: "No PDF file provided" });
-        }
+        const { title, company, category, pdfUrl } = req.body;
 
-        const { title, company, category } = req.body;
+        if (!req.file && !pdfUrl) {
+            return res.status(400).json({ message: "No PDF file or URL provided" });
+        }
 
         const newPdf = new Pdf({
             title,
             company,
-            pdfUrl: req.file.path, // Cloudinary gives back the URL here
+            pdfUrl: pdfUrl || req.file?.path, 
             category
         });
 

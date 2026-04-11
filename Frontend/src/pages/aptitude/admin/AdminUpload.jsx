@@ -45,31 +45,48 @@ const AdminUpload = () => {
             return toast.error("Correct answer must match one option");
         }
 
-        const loading = toast.loading("Uploading...");
-
+        const loading = toast.loading("Uploading Question...");
+ 
         try {
-            const data = new FormData();
-
-            Object.entries(formData).forEach(([key, value]) => {
-                if (key === "options") {
-                    value.forEach((opt) => data.append("options", opt));
-                } else {
-                    data.append(key, value);
-                }
-            });
-
-            if (file) data.append("graphImage", file);
-
-            await axios.post(`${BASE_URL}/questions/add`, data, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
-
+            let imageUrl = "";
+ 
+            // 1. Direct Cloudinary Upload if file exists
+            if (file) {
+                // Get Signature for 'aptitude_questions' folder
+                const { data: sigData } = await axios.get(`/aptitude/pdfs/sign?folder=aptitude_questions`);
+                const { signature, timestamp, api_key, cloud_name, folder } = sigData;
+ 
+                const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`;
+ 
+                const formDataToCloudinary = new FormData();
+                formDataToCloudinary.append("file", file);
+                formDataToCloudinary.append("api_key", api_key);
+                formDataToCloudinary.append("timestamp", timestamp);
+                formDataToCloudinary.append("signature", signature);
+                formDataToCloudinary.append("folder", folder);
+ 
+                const { data: cloudinaryResponse } = await axios.post(cloudinaryUrl, formDataToCloudinary, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                    withCredentials: false
+                });
+ 
+                imageUrl = cloudinaryResponse.secure_url;
+            }
+ 
+            // 2. Post Data to Backend
+            const finalData = { 
+                ...formData,
+                imageUrl 
+            };
+ 
+            await axios.post(`${BASE_URL}/questions/add`, finalData);
+ 
             toast.dismiss(loading);
             toast.success("Question Added 🚀");
-
             setTimeout(() => navigate('/aptitude/admin'), 1200);
-        } catch {
+        } catch (err) {
             toast.dismiss(loading);
+            console.error("Upload failed", err);
             toast.error("Upload failed");
         }
     };

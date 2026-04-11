@@ -6,8 +6,11 @@ export const addQuestion = async (req, res) => {
     try {
         const questionData = { ...req.body };
 
-        // 1. Cloudinary image handle karein (req.file.path mein URL hota hai)
-        if (req.file) {
+        // 1. Cloudinary image handle karein
+        // Prioritize imageUrl from body (direct frontend upload)
+        if (req.body.imageUrl) {
+            questionData.imageUrl = req.body.imageUrl;
+        } else if (req.file) {
             questionData.imageUrl = req.file.path; 
         }
 
@@ -56,7 +59,11 @@ export const updateQuestion = async (req, res) => {
         const { id } = req.params;
         const updateData = { ...req.body };
 
-        if (req.file) {
+        // 1. Cloudinary image handle karein
+        // Prioritize imageUrl from body (direct frontend upload)
+        if (req.body.imageUrl) {
+            updateData.imageUrl = req.body.imageUrl;
+        } else if (req.file) {
             updateData.imageUrl = req.file.path;
         }
 

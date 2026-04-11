@@ -152,7 +152,7 @@ const Sidebar = ({ onSelectTopic, activeTopic, isMobileOpen, setIsMobileOpen, se
 
                 </div>
 
-                <div className="p-6 border-t border-white/5 flex-shrink-0 bg-black/40 backdrop-blur-sm">
+                {/* <div className="p-6 border-t border-white/5 flex-shrink-0 bg-black/40 backdrop-blur-sm">
                     <button onClick={() => setIsModalOpen(true)} className="w-full group flex items-center justify-between p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all border border-white/5 hover:border-white/10 shadow-lg">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-neutral-900 rounded-lg text-neutral-500 group-hover:text-amber-500 transition-colors border border-white/5">
@@ -162,7 +162,7 @@ const Sidebar = ({ onSelectTopic, activeTopic, isMobileOpen, setIsMobileOpen, se
                         </div>
                         <LockClosedIcon className="w-4 h-4 text-neutral-600 group-hover:text-amber-500/50" />
                     </button>
-                </div>
+                </div> */}
             </aside>
 
             {isModalOpen && (

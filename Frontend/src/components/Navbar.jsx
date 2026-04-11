@@ -75,7 +75,10 @@ export default function Navbar() {
                                 <li className="menu-title text-neutral-400">Hello, {user.firstname}</li>
                                 <li><Link to="/profile" className="hover:bg-neutral-700 text-neutral-200">Profile</Link></li>
                                 {user.role === 'admin' && (
-                                    <li><Link to="/admin" className="hover:bg-neutral-700 text-neutral-200">Admin Panel</Link></li>
+                                    <>
+                                        <li><Link to="/admin" className="hover:bg-neutral-700 text-neutral-200">DSA Admin Panel</Link></li>
+                                        <li><Link to="/aptitude/admin" className="hover:bg-neutral-700 text-neutral-200">Aptitude Admin Panel</Link></li>
+                                    </>
                                 )}
                                 <li><button onClick={handleLogout} className="text-red-400 hover:bg-red-900/20">Logout</button></li>
                             </ul>
