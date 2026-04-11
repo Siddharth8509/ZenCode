@@ -220,10 +220,6 @@ export default function Problemset() {
     return Math.round((solvedCount / stats.total) * 100);
   }, [solvedCount, stats.total]);
 
-  const handleAdmin = () => {
-    navigate("/admin");
-  };
-
   const handleOpenRandomQuestion = () => {
     if (!problems.length) return;
     const randomIndex = Math.floor(Math.random() * problems.length);
@@ -290,12 +286,21 @@ export default function Problemset() {
             </div>
             <div className="flex items-center gap-3">
               {user?.role === "admin" && (
+               <>
                 <button
                   className="btn btn-sm bg-gradient-to-r from-orange-500 to-red-500 text-white border-none hover:from-orange-600 hover:to-red-600"
-                  onClick={handleAdmin}
+                  onClick={() => navigate("/admin")}
                 >
-                  Admin Panel
+                  DSA Admin Panel
                 </button>
+                <button
+                  className="btn btn-sm bg-gradient-to-r from-orange-500 to-red-500 text-white border-none hover:from-orange-600 hover:to-red-600"
+                  onClick={() => navigate("/aptitude/admin")}
+                >
+                  Aptitude Admin Panel
+                </button>
+                
+                </>
               )}
               <button
                 className="btn btn-sm bg-emerald-500/20 text-emerald-200 border-emerald-400/30 hover:bg-emerald-500/30"

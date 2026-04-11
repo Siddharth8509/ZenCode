@@ -8,6 +8,8 @@ const AdminPdfUpload = () => {
     const navigate = useNavigate();
 
     const [file, setFile] = useState(null);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [isUploading, setIsUploading] = useState(false);
 
     const [formData, setFormData] = useState({
         title: "",
@@ -25,24 +27,53 @@ const AdminPdfUpload = () => {
         const loading = toast.loading("Uploading PDF...");
 
         try {
-            const data = new FormData();
+            setIsUploading(true);
+            setUploadProgress(0);
 
-            data.append("title", formData.title);
-            data.append("company", formData.company);
-            data.append("category", formData.category);
-            data.append("pdfFile", file); // MUST match backend
+            // 1. Get signature from backend
+            const { data: signData } = await axios.get(`${BASE_URL}/pdfs/sign`);
+            const { signature, timestamp, api_key, cloud_name, folder } = signData;
 
-            await axios.post(`${BASE_URL}/pdfs/upload`, data, {
+            // 2. Upload directly to Cloudinary
+            const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloud_name}/auto/upload`;
+            
+            const formDataToCloudinary = new FormData();
+            formDataToCloudinary.append("file", file);
+            formDataToCloudinary.append("api_key", api_key);
+            formDataToCloudinary.append("timestamp", timestamp);
+            formDataToCloudinary.append("signature", signature);
+            formDataToCloudinary.append("folder", folder);
+            
+            const { data: cloudinaryResponse } = await axios.post(cloudinaryUrl, formDataToCloudinary, {
                 headers: { "Content-Type": "multipart/form-data" },
+                withCredentials: false, 
+                onUploadProgress: (progressEvent) => {
+                    const progress = Math.round(
+                        (progressEvent.loaded * 100) / progressEvent.total
+                    );
+                    setUploadProgress(progress);
+                },
+            });
+
+            // 3. Send the resulting URL to your backend
+            await axios.post(`${BASE_URL}/pdfs/upload`, {
+                title: formData.title,
+                company: formData.company,
+                category: formData.category,
+                pdfUrl: cloudinaryResponse.secure_url,
             });
 
             toast.dismiss(loading);
+            setIsUploading(false);
             toast.success("PDF Uploaded 🚀");
 
             setTimeout(() => navigate('/aptitude/admin'), 1200);
 
-        } catch {
+        } catch (error) {
+            console.error("PDF Upload Error:", error);
             toast.dismiss(loading);
+            setIsUploading(false);
+            setUploadProgress(0);
             toast.error("Upload failed");
         }
     };
@@ -142,10 +173,31 @@ const AdminPdfUpload = () => {
                                     accept="application/pdf"
                                     className="hidden"
                                     onChange={(e) => setFile(e.target.files[0])}
+                                    disabled={isUploading}
                                 />
                             </label>
                         </div>
                     </div>
+
+                    {/* PROGRESS BAR */}
+                    {isUploading && (
+                        <div className="glass-panel p-5 rounded-2xl border border-white/10">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-xs font-bold text-orange-400 uppercase tracking-widest">
+                                    Uploading...
+                                </span>
+                                <span className="text-sm font-mono font-bold text-white">
+                                    {uploadProgress}%
+                                </span>
+                            </div>
+                            <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden border border-white/5">
+                                <div 
+                                    className="bg-gradient-to-r from-orange-400 to-red-500 h-full transition-all duration-300"
+                                    style={{ width: `${uploadProgress}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
 
                 </form>
             </div>
