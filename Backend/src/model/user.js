@@ -3,6 +3,35 @@
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 
+const createEmptyLearningProgress = () => ({
+    watchedVideoIds: [],
+    lastWatchedVideoId: "",
+    lastWatchedTopic: "",
+    updatedAt: null,
+});
+
+const learningCourseProgressSchema = new Schema(
+    {
+        watchedVideoIds: {
+            type: [String],
+            default: [],
+        },
+        lastWatchedVideoId: {
+            type: String,
+            default: "",
+        },
+        lastWatchedTopic: {
+            type: String,
+            default: "",
+        },
+        updatedAt: {
+            type: Date,
+            default: null,
+        },
+    },
+    { _id: false }
+);
+
 const userSchema = new Schema(
     {
     firstname : {
@@ -56,6 +85,24 @@ const userSchema = new Schema(
             ref : "problem"
         }],
         default : []
+    },
+    aptitudeLearningProgress: {
+        aptitude: {
+            type: learningCourseProgressSchema,
+            default: createEmptyLearningProgress,
+        },
+        logical: {
+            type: learningCourseProgressSchema,
+            default: createEmptyLearningProgress,
+        },
+        verbal: {
+            type: learningCourseProgressSchema,
+            default: createEmptyLearningProgress,
+        },
+        csCore: {
+            type: learningCourseProgressSchema,
+            default: createEmptyLearningProgress,
+        },
     }
     },
     {

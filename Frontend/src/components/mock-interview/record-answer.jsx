@@ -15,7 +15,7 @@ import { useParams } from "react-router-dom";
 import WebCam from "react-webcam";
 import { TooltipButton } from "./tooltip-button";
 import { toast } from "sonner";
-import { chatSession } from "@/scripts";
+import { generateMockInterviewFeedback } from "@/scripts";
 import {
   addDoc,
   collection,
@@ -103,54 +103,23 @@ export const RecordAnswer = ({
   const userId = user?._id;
   const { interviewId } = useParams();
 
-  const cleanJsonResponse = (responseText) => {
-    let cleanText = responseText.trim();
-    cleanText = cleanText.replace(/(json|```|`)/g, "");
-
-    try {
-      return JSON.parse(cleanText);
-    } catch (error) {
-      throw new Error("Invalid JSON format: " + error?.message);
-    }
-  };
-
   const generateResult = async (questionText, correctAnswer, answerText) => {
     setIsAiGenerating(true);
 
-    const prompt = `
-Question: "${questionText}"
-User Answer: "${answerText}"
-Correct Answer: "${correctAnswer}"
-
-Act as an experienced interview coach. Compare the user's answer with the correct answer.
-
-Return ONLY valid JSON with this exact shape:
-{
-  "ratings": number,
-  "feedback": string,
-  "communicationScore": number,
-  "communicationFeedback": string,
-  "improvementTips": ["tip 1", "tip 2", "tip 3"],
-  "strengths": ["strength 1", "strength 2"]
-}
-
-Rules:
-- ratings must be a number from 1 to 10 for technical quality.
-- feedback must be 2 or 3 sentences and explain correctness, missing depth, and what to improve.
-- communicationScore must be a number from 1 to 10 based on clarity, structure, confidence, and conciseness.
-- communicationFeedback must be 2 sentences focused only on speaking and communication quality.
-- improvementTips must contain exactly 3 short, actionable strings.
-- strengths must contain exactly 2 short positive strings.
-- No markdown, no code fences, no extra text.
-`;
-
     try {
-      const aiResult = await chatSession.sendMessage(prompt);
-      return normalizeAiResponse(cleanJsonResponse(aiResult.response.text()));
+      const aiResult = await generateMockInterviewFeedback({
+        questionText,
+        correctAnswer,
+        answerText,
+      });
+
+      return normalizeAiResponse(aiResult);
     } catch (error) {
       console.log(error);
       toast("Error", {
-        description: "An error occurred while generating feedback.",
+        description:
+          error?.response?.data?.error ||
+          "An error occurred while generating feedback.",
       });
 
       return {

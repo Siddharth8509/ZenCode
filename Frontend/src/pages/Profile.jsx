@@ -7,6 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { gsap } from "gsap";
 import Navbar from "../components/Navbar";
 import axiosClient from "../utils/axiosClient";
+import axios from "axios";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../config/firebase.config";
 import {
@@ -157,6 +158,7 @@ export default function Profile() {
 
   const [lastInterview, setLastInterview] = useState(null);
   const [lastResumeAnalysis, setLastResumeAnalysis] = useState(null);
+  const [lastBuiltResume, setLastBuiltResume] = useState(null);
   const [activityData, setActivityData] = useState([]);
   const [activityLoading, setActivityLoading] = useState(true);
 
@@ -351,7 +353,12 @@ export default function Profile() {
           const q = query(interviewsRef, where("userId", "==", userId));
           const querySnapshot = await getDocs(q);
           let docs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          docs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          // Firestore serverTimestamp() returns Timestamp objects, not Date strings
+          docs.sort((a, b) => {
+            const aTime = a.createdAt?.seconds || 0;
+            const bTime = b.createdAt?.seconds || 0;
+            return bTime - aTime;
+          });
           if (!isCancelled && docs.length > 0) {
             setLastInterview(docs[0]);
           }
@@ -367,6 +374,20 @@ export default function Profile() {
         } catch (resumeErr) {
           // Silently ignore - resume history may not exist
           console.error("Error fetching resume history:", resumeErr);
+        }
+
+        // Fetch the latest built resume from the resume builder
+        try {
+          const resumeBuilderApi = axios.create({
+            baseURL: (import.meta.env.VITE_API_BASE_URL || "http://localhost:3000") + "/resume-builder",
+          });
+          const builtRes = await resumeBuilderApi.get("/api/resumes/list");
+          const builtResumes = Array.isArray(builtRes.data?.resumes) ? builtRes.data.resumes : [];
+          if (!isCancelled && builtResumes.length > 0) {
+            setLastBuiltResume(builtResumes[0]);
+          }
+        } catch (builtResumeErr) {
+          console.error("Error fetching built resumes:", builtResumeErr);
         }
       } catch (err) {
         console.error("Error fetching extra profile data:", err);
@@ -421,11 +442,49 @@ export default function Profile() {
     };
   }, [solvedCount, progressPercent]);
 
+  const calculateStreak = (data) => {
+    if (!data || data.length === 0) return 0;
+    const sortedDates = [...data]
+      .filter(d => d.count > 0)
+      .map(d => (d._id || d.dateStr || "").split("T")[0])
+      .filter(Boolean)
+      .sort((a, b) => new Date(b) - new Date(a));
+      
+    if (sortedDates.length === 0) return 0;
+    const uniqueDates = [...new Set(sortedDates)];
+    
+    let streak = 0;
+    // We compute today locally. Make sure we use YYYY-MM-DD format
+    const todayObj = new Date();
+    const tzOffset = todayObj.getTimezoneOffset() * 60000;
+    const today = new Date(todayObj - tzOffset).toISOString().split('T')[0];
+    const yesterday = new Date(todayObj - tzOffset - 86400000).toISOString().split('T')[0];
+    
+    if (uniqueDates[0] === today || uniqueDates[0] === yesterday) {
+      streak = 1;
+      let currentDate = new Date(uniqueDates[0]);
+      for (let i = 1; i < uniqueDates.length; i++) {
+        const prevDate = new Date(uniqueDates[i]);
+        const diff = (currentDate - prevDate) / (1000 * 60 * 60 * 24);
+        if (Math.round(diff) === 1) {
+          streak++;
+          currentDate = prevDate;
+        } else {
+          break;
+        }
+      }
+    }
+    return streak;
+  };
+
+  const calculatedDaysActive = user?.activityData ? user.activityData.length : 0;
+  const calculatedStreak = calculateStreak(user?.activityData);
+
   const stats = [
     { label: "Problems Solved", value: animatedSolvedCount, icon: CodeBracketIcon, color: "text-emerald-400" },
     { label: "Total Problems", value: totalProblems, icon: AcademicCapIcon, color: "text-cyan-300" },
-    { label: "Current Streak", value: "--", icon: FireIcon, color: "text-orange-400" },
-    { label: "Days Active", value: "--", icon: CalendarDaysIcon, color: "text-blue-400" },
+    { label: "Current Streak", value: calculatedStreak, icon: FireIcon, color: "text-orange-400" },
+    { label: "Days Active", value: calculatedDaysActive, icon: CalendarDaysIcon, color: "text-blue-400" },
   ];
 
   return (
@@ -637,9 +696,11 @@ export default function Profile() {
                         <MicrophoneIcon className="h-6 w-6 text-blue-400 mb-0.5" />
                       </div>
                       <div className="min-w-0">
-                        <div className="text-lg font-bold tracking-wide truncate">{lastInterview.jobRole || "Mock Interview"}</div>
+                        <div className="text-lg font-bold tracking-wide truncate">{lastInterview.position || "Mock Interview"}</div>
                         <div className="text-sm text-neutral-400 mt-0.5 font-medium truncate">
-                          {lastInterview.createdAt ? new Date(lastInterview.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "--"}
+                          {lastInterview.createdAt?.seconds
+                            ? new Date(lastInterview.createdAt.seconds * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })
+                            : "--"}
                         </div>
                       </div>
                   </div>
@@ -731,6 +792,82 @@ export default function Profile() {
                   className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl border border-orange-400/20 bg-orange-500/10 px-4 py-2.5 text-sm font-semibold text-orange-100 transition-all hover:border-orange-300/40 hover:bg-orange-500/15 hover:text-white"
                 >
                   Analyze Resume
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Last Built Resume */}
+          <div className="glass-panel p-6 rounded-2xl border border-white/10 mt-6">
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-center gap-2">
+                <DocumentTextIcon className="h-5 w-5 text-blue-400" />
+                <div>
+                  <span className="text-sm font-semibold uppercase tracking-[0.15em] text-neutral-400">Last Built Resume</span>
+                  <p className="mt-1 text-sm text-neutral-500">Your most recently created resume from the AI Resume Builder.</p>
+                </div>
+              </div>
+              <Link
+                to="/resume-builder"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-400/20 bg-blue-500/10 px-4 py-2 text-sm font-semibold text-blue-100 transition-all hover:border-blue-300/40 hover:bg-blue-500/15 hover:text-white"
+              >
+                Go to Resume Builder
+              </Link>
+            </div>
+            {lastBuiltResume ? (
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
+                <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-blue-500/10 via-black/70 to-black/90 p-5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <div className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-500/10 shadow-[0_0_35px_rgba(59,130,246,0.12)]">
+                      <DocumentTextIcon className="h-8 w-8 text-blue-300" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {lastBuiltResume.updatedAt && (
+                          <span className="inline-flex items-center rounded-full border border-white/10 bg-black/40 px-3 py-1 text-xs text-neutral-400">
+                            {new Date(lastBuiltResume.updatedAt).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-4 text-xl font-bold tracking-wide text-white">
+                        {lastBuiltResume.title || "Untitled Resume"}
+                      </div>
+                      <div className="mt-2 text-sm text-neutral-400">
+                        Your latest resume, ready to download or share.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+                  <Link
+                    to={`/resume-builder/builder/${lastBuiltResume._id}`}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-400/25 bg-gradient-to-r from-blue-500/20 to-purple-500/10 px-5 py-3 text-sm font-semibold text-white transition-all hover:border-blue-300/40 hover:from-blue-500/25 hover:to-purple-500/15"
+                  >
+                    Edit Resume
+                  </Link>
+                  <Link
+                    to="/resume-builder"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-neutral-200 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white"
+                  >
+                    All Resumes
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="flex min-h-[160px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-black/40 px-6 py-8 text-center">
+                <div className="rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4">
+                  <DocumentTextIcon className="h-8 w-8 text-blue-300" />
+                </div>
+                <p className="mt-4 text-sm text-neutral-400">No resumes built yet. Create one with the AI Resume Builder.</p>
+                <Link
+                  to="/resume-builder"
+                  className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl border border-blue-400/20 bg-blue-500/10 px-4 py-2.5 text-sm font-semibold text-blue-100 transition-all hover:border-blue-300/40 hover:bg-blue-500/15 hover:text-white"
+                >
+                  Build Resume
                 </Link>
               </div>
             )}

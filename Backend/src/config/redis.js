@@ -7,12 +7,12 @@ import { fileURLToPath } from "url";
 dotenv.config({ path: fileURLToPath(new URL("../../.env", import.meta.url)) });
 
 const redisClient = redis.createClient({
-    username: 'default',
+    username: process.env.REDIS_USERNAME || "default",
     password: process.env.REDIS_PASS,
     socket: {
-        host: 'redis-15582.crce263.ap-south-1-1.ec2.cloud.redislabs.com',
-        port: 15582
+        host: process.env.REDIS_HOST || "redis-15582.crce263.ap-south-1-1.ec2.cloud.redislabs.com",
+        port: Number(process.env.REDIS_PORT) || 15582,
     }
-})
+});
 
 export default redisClient;

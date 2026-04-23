@@ -51,11 +51,21 @@ export default function Navbar() {
                         </Link>
                     )}
                     {user && (
+                        <Link to="/learning" className="text-neutral-300 hover:text-white font-medium transition-colors whitespace-nowrap">
+                            Learning
+                        </Link>
+                    )}
+                    {user && (
                         <Link to="/ai-analyzer" className="inline-flex items-center gap-2 text-neutral-300 hover:text-white font-medium transition-colors whitespace-nowrap">
                             <span className="rounded-full border border-orange-400/30 bg-orange-500/10 px-2 py-0.5 text-[10px] font-bold text-orange-300 shadow-[0_0_18px_rgba(249,115,22,0.25)]">
                                 AI
                             </span>
                             AI Analyzer
+                        </Link>
+                    )}
+                    {user && (
+                        <Link to="/resume-builder" className="text-neutral-300 hover:text-white font-medium transition-colors whitespace-nowrap">
+                            Resume Builder
                         </Link>
                     )}
                     {user && (
@@ -84,6 +94,7 @@ export default function Navbar() {
                                     <>
                                         <li><Link to="/admin" className="hover:bg-neutral-700 text-neutral-200">DSA Admin Panel</Link></li>
                                         <li><Link to="/aptitude/admin" className="hover:bg-neutral-700 text-neutral-200">Aptitude Admin Panel</Link></li>
+                                        <li><Link to="/learning/admin" className="hover:bg-neutral-700 text-neutral-200">Learning Admin Panel</Link></li>
                                     </>
                                 )}
                                 <li><button onClick={handleLogout} className="text-red-400 hover:bg-red-900/20">Logout</button></li>

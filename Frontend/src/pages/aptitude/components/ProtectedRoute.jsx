@@ -1,17 +1,10 @@
-import React, { useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 const ProtectedRoute = ({ children }) => {
-    const isAuthenticated = sessionStorage.getItem("adminToken") === "zencode_authenticated";
+    const { isAuthenticated, user } = useSelector((state) => state.auth);
 
-    useEffect(() => {
-        return () => {
-            console.log("Cleaning up session...");
-            sessionStorage.removeItem("adminToken");
-        };
-    }, []);
-
-    if (!isAuthenticated) {
+    if (!isAuthenticated || user?.role !== "admin") {
         return <Navigate to="/aptitude/platform" replace />;
     }
 

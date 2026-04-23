@@ -1,26 +1,12 @@
-import { GoogleGenAI } from "@google/genai";
+import { getGeminiClient, GEMINI_MODEL as BASE_MODEL, GEMINI_API_KEY } from "../config/ai.js";
 import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
 import mongoose from "mongoose";
-import dotenv from "dotenv";
-import { fileURLToPath } from "url";
 import ResumeAnalysis from "../model/resumeAnalysis.js";
 
-dotenv.config({ path: fileURLToPath(new URL("../../.env", import.meta.url)) });
-
-const GEMINI_MODEL = process.env.GEMINI_RESUME_MODEL || process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const GEMINI_MODEL = BASE_MODEL;
 const MAX_RESUME_CHARS = 18000;
 const MAX_JOB_DESCRIPTION_CHARS = 6000;
-
-function getResumeGeminiApiKey() {
-    return (
-        process.env.GEMINI_API_KEY_RESUME_ANALYZER ||
-        process.env.GEMINI_API_KEY ||
-        process.env.GOOGLE_API_KEY ||
-        process.env.GEMINI_API_KEY_AI_MOCK ||
-        ""
-    );
-}
 
 function truncateText(value, maxLength) {
     const text = String(value || "").replace(/\s+\n/g, "\n").replace(/[ \t]+/g, " ").trim();
@@ -157,8 +143,11 @@ function normalizeAnalysisPayload(payload, modelUsed) {
 }
 
 function buildAnalysisPrompt({ resumeText, targetRole, jobDescription }) {
+    const currentDate = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    
     return `
 You are an expert resume analyst and ATS optimization specialist.
+The current date is ${currentDate}. Keep this in mind when evaluating resume timelines, "current" roles, and past vs. future dates.
 
 Analyze the resume for clarity, impact, ATS compatibility, role alignment, missing skills, formatting, and practical next steps.
 Return only valid JSON. Do not include markdown fences or commentary outside JSON.
@@ -206,14 +195,13 @@ ${resumeText}
 }
 
 async function analyzeWithGemini({ resumeText, targetRole, jobDescription }) {
-    const apiKey = getResumeGeminiApiKey();
-    if (!apiKey) {
-        const error = new Error("Resume analyzer AI is not configured. Add GEMINI_API_KEY_RESUME_ANALYZER or GEMINI_API_KEY in the backend environment.");
+    if (!GEMINI_API_KEY) {
+        const error = new Error("AI is not configured. Set GEMINI_API_KEY in the backend .env file.");
         error.statusCode = 503;
         throw error;
     }
 
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = getGeminiClient();
     const response = await ai.models.generateContent({
         model: GEMINI_MODEL,
         contents: [{ role: "user", parts: [{ text: buildAnalysisPrompt({ resumeText, targetRole, jobDescription }) }] }],

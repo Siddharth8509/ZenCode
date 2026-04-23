@@ -10,7 +10,7 @@ const storage = new cloudinaryStorage({
     
     const params = {
       folder: isPdf ? 'zencode_pdfs' : 'aptitude_questions',
-      resource_type: 'auto', // Letting Cloudinary decide is generally safer and faster
+      resource_type: 'auto',
       public_id: `zencode-${Date.now()}-${file.originalname.split('.')[0]}`,
     };
 
@@ -26,7 +26,7 @@ const storage = new cloudinaryStorage({
 const upload = multer({ 
   storage: storage,
   limits: { 
-    // Increased to 10MB for larger PDF question papers
+    // 10MB for server-side uploads (aptitude images/questions)
     fileSize: 10 * 1024 * 1024 
   } 
 });

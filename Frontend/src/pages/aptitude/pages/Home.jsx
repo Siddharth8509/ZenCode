@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopicCard from '../components/TopicCard';
-import { CalculatorIcon, LightBulbIcon, LanguageIcon, CpuChipIcon, BuildingOffice2Icon, Squares2X2Icon } from '@heroicons/react/24/outline';
+import { CalculatorIcon, LightBulbIcon, LanguageIcon, CpuChipIcon, BuildingOffice2Icon, Squares2X2Icon, ComputerDesktopIcon } from '@heroicons/react/24/outline';
 
 const Home = () => {
   const navigate = useNavigate();

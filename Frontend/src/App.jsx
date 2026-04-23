@@ -49,6 +49,16 @@ const AdminPdfUpload = lazy(() => import('./pages/aptitude/admin/AdminPdfUpload'
 const AdminPdfEdit = lazy(() => import('./pages/aptitude/admin/AdminPdfEdit'));
 const StudentDashboard = lazy(() => import('./pages/aptitude/components/StudentDashboard'));
 
+const ResumeBuilderDashboard = lazy(() => import('./pages/resume-builder/Dashboard'));
+const ResumeBuilderApp = lazy(() => import('./pages/resume-builder/ResumeBuilder'));
+const ResumeBuilderPreview = lazy(() => import('./pages/resume-builder/Preview'));
+
+const LearningDashboard = lazy(() => import('./pages/learning/LearningDashboard'));
+const CSMasterclass = lazy(() => import('./pages/learning/CSMasterclass'));
+const PdfViewer = lazy(() => import('./pages/learning/PdfViewer'));
+const PdfUpload = lazy(() => import('./pages/learning/PdfUpload'));
+const LearningAdmin = lazy(() => import('./pages/learning/LearningAdmin'));
+
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:3000").replace(/\/+$/, "");
 const API_HOSTNAME = (() => {
   try {
@@ -90,7 +100,7 @@ function RouteFallback({ showGlobalNavbar = true }) {
 }
 
 function App() {
-  const { isAuthenticated, loading } = useSelector((state) => state.auth);
+  const { isAuthenticated, loading, user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const location = useLocation();
   const hasStartedAuthCheckRef = useRef(false);
@@ -98,6 +108,7 @@ function App() {
   const [secondsRemaining, setSecondsRemaining] = useState(COLD_START_WAIT_SECONDS);
   const isProblemIdeRoute = /^\/problem\/[^/]+$/.test(location.pathname);
   const showGlobalNavbar = !isProblemIdeRoute;
+  const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
     if (backendReady || hasStartedAuthCheckRef.current) return;
@@ -193,12 +204,84 @@ function App() {
             <Route path="learn" element={<Navigate to="/aptitude/learn/aptitude" replace />} />
             <Route path="dashboard" element={isAuthenticated ? <StudentDashboard /> : <Navigate to="/login" />} />
             
-            <Route path="admin" element={isAuthenticated ? <AdminDashboardAptitude /> : <Navigate to="/login" />} />
-            <Route path="admin/add" element={isAuthenticated ? <AdminUploadAptitude /> : <Navigate to="/login" />} />
-            <Route path="admin/edit/:id" element={isAuthenticated ? <AdminEditAptitude /> : <Navigate to="/login" />} />
-            <Route path="admin/add-lecture" element={isAuthenticated ? <AddLecture /> : <Navigate to="/login" />} />
-            <Route path="admin/upload-pdf" element={isAuthenticated ? <AdminPdfUpload /> : <Navigate to="/login" />} />
-            <Route path="admin/edit-pdf/:id" element={isAuthenticated ? <AdminPdfEdit /> : <Navigate to="/login" />} />
+            <Route
+              path="admin"
+              element={
+                isAuthenticated
+                  ? (isAdmin ? <AdminDashboardAptitude /> : <Navigate to="/aptitude" replace />)
+                  : <Navigate to="/login" />
+              }
+            />
+            <Route
+              path="admin/add"
+              element={
+                isAuthenticated
+                  ? (isAdmin ? <AdminUploadAptitude /> : <Navigate to="/aptitude" replace />)
+                  : <Navigate to="/login" />
+              }
+            />
+            <Route
+              path="admin/edit/:id"
+              element={
+                isAuthenticated
+                  ? (isAdmin ? <AdminEditAptitude /> : <Navigate to="/aptitude" replace />)
+                  : <Navigate to="/login" />
+              }
+            />
+            <Route
+              path="admin/add-lecture"
+              element={
+                isAuthenticated
+                  ? (isAdmin ? <AddLecture /> : <Navigate to="/aptitude" replace />)
+                  : <Navigate to="/login" />
+              }
+            />
+            <Route
+              path="admin/upload-pdf"
+              element={
+                isAuthenticated
+                  ? (isAdmin ? <AdminPdfUpload /> : <Navigate to="/aptitude" replace />)
+                  : <Navigate to="/login" />
+              }
+            />
+            <Route
+              path="admin/edit-pdf/:id"
+              element={
+                isAuthenticated
+                  ? (isAdmin ? <AdminPdfEdit /> : <Navigate to="/aptitude" replace />)
+                  : <Navigate to="/login" />
+              }
+            />
+          </Route>
+
+          {/* Resume Builder Routes */}
+          <Route path="/resume-builder">
+            <Route index element={isAuthenticated ? <ResumeBuilderDashboard /> : <Navigate to="/login" />} />
+            <Route path="builder/:resumeId" element={isAuthenticated ? <ResumeBuilderApp /> : <Navigate to="/login" />} />
+            <Route path="view/:resumeId" element={<ResumeBuilderPreview />} />
+          </Route>
+
+          {/* Learning Routes */}
+          <Route path="/learning">
+            <Route index element={isAuthenticated ? <LearningDashboard /> : <Navigate to="/login" />} />
+            <Route path="cs-core" element={isAuthenticated ? <CSMasterclass /> : <Navigate to="/login" />} />
+            <Route path="materials" element={isAuthenticated ? <PdfViewer /> : <Navigate to="/login" />} />
+            <Route
+              path="upload"
+              element={
+                isAuthenticated
+                  ? (isAdmin ? <PdfUpload /> : <Navigate to="/learning" replace />)
+                  : <Navigate to="/login" />
+              }
+            />
+            <Route
+              path="admin"
+              element={
+                isAuthenticated
+                  ? (isAdmin ? <LearningAdmin /> : <Navigate to="/learning" replace />)
+                  : <Navigate to="/login" />
+              }
+            />
           </Route>
           </Routes>
         </Suspense>

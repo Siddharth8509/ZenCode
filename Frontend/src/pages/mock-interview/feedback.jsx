@@ -245,14 +245,6 @@ export const Feedback = () => {
   const bestRating = clampScore(Math.max(0, ...detailedFeedbacks.map((feed) => Number(feed.rating) || 0)));
   const communicationScore = clampScore(average(detailedFeedbacks.map((feed) => feed.communication.score || 0)));
 
-  const distribution = useMemo(() => {
-    const buckets = Array.from({ length: 10 }, (_, index) => ({ label: `${index + 1}`, count: 0 }));
-    detailedFeedbacks.forEach((feed) => {
-      const index = Math.min(9, Math.max(0, Math.round(Number(feed.rating) || 0) - 1));
-      buckets[index].count += 1;
-    });
-    return buckets;
-  }, [detailedFeedbacks]);
 
   const communicationSummary = useMemo(() => {
     if (!detailedFeedbacks.length) {
@@ -389,97 +381,78 @@ export const Feedback = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-6">
-        <div className="glass-panel rounded-[2rem] border border-white/10 p-6 md:p-7">
-          <Headings
-            title="Performance Breakdown"
-            description="Spot score patterns quickly and see which answers need another pass."
-            isSubHeading
-          />
 
-          <div className="mt-6 space-y-3">
-            {distribution.map((bucket) => {
-              const maxCount = Math.max(...distribution.map((item) => item.count), 1);
-              const width = (bucket.count / maxCount) * 100;
-              return (
-                <div key={bucket.label} className="flex items-center gap-3">
-                  <span className="w-6 text-sm font-bold text-neutral-400">{bucket.label}</span>
-                  <div className="flex-1 h-2 overflow-hidden rounded-full bg-white/5">
-                    <div className={cn("h-full rounded-full bg-gradient-to-r", getBarColor(bucket.label))} style={{ width: `${width}%` }} />
-                  </div>
-                  <span className="w-5 text-right text-sm text-neutral-500">{bucket.count}</span>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="mt-8 border-t border-white/5 pt-6">
-            <div className="flex items-center gap-2">
-              <ChartBarIcon className="w-5 h-5 text-orange-400" />
-              <h3 className="text-lg font-bold text-white">Question Performance</h3>
-            </div>
-
-            <div className="mt-5 space-y-4">
-              {detailedFeedbacks.length > 0 ? detailedFeedbacks.map((feed, index) => (
-                <div key={feed.id} className="space-y-2">
-                  <div className="flex items-center justify-between gap-4">
-                    <p className="text-sm text-neutral-300 leading-relaxed">Q{index + 1}. {feed.question}</p>
-                    <span className={cn("text-sm font-black whitespace-nowrap", getTone(Number(feed.rating) || 0))}>
-                      {(Number(feed.rating) || 0).toFixed(1)}/10
-                    </span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-white/5">
-                    <div
-                      className={cn("h-full rounded-full bg-gradient-to-r", getBarColor(feed.rating))}
-                      style={{ width: `${Math.max(0, Math.min(100, (Number(feed.rating) || 0) * 10))}%` }}
-                    />
-                  </div>
-                </div>
-              )) : (
-                <p className="text-sm text-neutral-500">Once you submit answers, this section will show how each question performed.</p>
-              )}
-            </div>
-          </div>
+      {/* ── Question Performance ── full width */}
+      <div className="glass-panel rounded-[2rem] border border-white/10 p-6 md:p-7">
+        <div className="flex items-center gap-2">
+          <ChartBarIcon className="w-5 h-5 text-orange-400" />
+          <h3 className="text-lg font-bold text-white">Question Performance</h3>
         </div>
 
+        <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+          {detailedFeedbacks.length > 0 ? detailedFeedbacks.map((feed, index) => (
+            <div key={feed.id} className="space-y-2">
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-sm text-neutral-300 leading-relaxed truncate">Q{index + 1}. {feed.question}</p>
+                <span className={cn("text-sm font-black whitespace-nowrap", getTone(Number(feed.rating) || 0))}>
+                  {(Number(feed.rating) || 0).toFixed(1)}/10
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-white/5">
+                <div
+                  className={cn("h-full rounded-full bg-gradient-to-r", getBarColor(feed.rating))}
+                  style={{ width: `${Math.max(0, Math.min(100, (Number(feed.rating) || 0) * 10))}%` }}
+                />
+              </div>
+            </div>
+          )) : (
+            <p className="text-sm text-neutral-500 md:col-span-2">Once you submit answers, this section will show how each question performed.</p>
+          )}
+        </div>
+      </div>
+
+      {/* ── Communication Coaching ── 2-column balanced */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Left: Communication Scores */}
         <div className="glass-panel rounded-[2rem] border border-white/10 p-6 md:p-7">
-          <Headings title="Communication Coaching" description={communicationSummary.summary} isSubHeading />
+          <Headings title="Communication Scores" description={communicationSummary.summary} isSubHeading />
           <div className="mt-6 space-y-5">
             <ScoreRow label="Clarity" value={communicationSummary.clarity} helper="Are your answers easy to understand on the first listen?" />
             <ScoreRow label="Structure" value={communicationSummary.structure} helper="Do your responses follow a clean interview-friendly order?" />
             <ScoreRow label="Confidence" value={communicationSummary.confidence} helper="Does your phrasing sound direct and grounded?" />
           </div>
+        </div>
 
-          <div className="mt-8 space-y-6">
-            <div>
-              <h3 className="text-sm font-black uppercase tracking-[0.24em] text-emerald-300">What Is Working</h3>
-              {communicationSummary.strengths.length > 0 ? (
-                <div className="mt-3 space-y-3">
-                  {communicationSummary.strengths.map((item, index) => (
-                    <div key={`${item}-${index}`} className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
-                      {item}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-3 text-sm text-neutral-500">Save a few answers to surface strengths here.</p>
-              )}
-            </div>
+        {/* Right: Strengths & Improvements */}
+        <div className="glass-panel rounded-[2rem] border border-white/10 p-6 md:p-7 space-y-6">
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-[0.24em] text-emerald-300">What Is Working</h3>
+            {communicationSummary.strengths.length > 0 ? (
+              <div className="mt-3 space-y-3">
+                {communicationSummary.strengths.map((item, index) => (
+                  <div key={`${item}-${index}`} className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+                    {item}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-neutral-500">Save a few answers to surface strengths here.</p>
+            )}
+          </div>
 
-            <div>
-              <h3 className="text-sm font-black uppercase tracking-[0.24em] text-orange-300">How To Improve</h3>
-              {communicationSummary.improvements.length > 0 ? (
-                <div className="mt-3 space-y-3">
-                  {communicationSummary.improvements.map((item, index) => (
-                    <div key={`${item}-${index}`} className="rounded-xl border border-orange-500/20 bg-orange-500/10 px-4 py-3 text-sm text-orange-100">
-                      {item}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-3 text-sm text-neutral-500">More submitted answers will unlock personalized communication tips.</p>
-              )}
-            </div>
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-[0.24em] text-orange-300">How To Improve</h3>
+            {communicationSummary.improvements.length > 0 ? (
+              <div className="mt-3 space-y-3">
+                {communicationSummary.improvements.map((item, index) => (
+                  <div key={`${item}-${index}`} className="rounded-xl border border-orange-500/20 bg-orange-500/10 px-4 py-3 text-sm text-orange-100">
+                    {item}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-neutral-500">More submitted answers will unlock personalized communication tips.</p>
+            )}
           </div>
         </div>
       </div>

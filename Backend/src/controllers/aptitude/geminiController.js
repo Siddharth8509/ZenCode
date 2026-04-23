@@ -1,23 +1,8 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getGeminiClient, GEMINI_MODEL as BASE_MODEL, GEMINI_API_KEY } from "../../config/ai.js";
 import { Question } from "../../model/aptitude/Question.js";
-import dotenv from "dotenv";
-import { fileURLToPath } from "url";
 
-dotenv.config({ path: fileURLToPath(new URL("../../../.env", import.meta.url)) });
-
-const GEMINI_MODEL = process.env.GEMINI_APTITUDE_MODEL || process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const GEMINI_MODEL = BASE_MODEL;
 const DIFFICULTIES = ["Easy", "Medium", "Hard"];
-
-function getGeminiApiKey() {
-    return (
-        process.env.GEMINI_API_KEY_APTITUDE ||
-        process.env.GEMINI_API_KEY ||
-        process.env.GEMINI_API_KEY_AI_MOCK ||
-        process.env.GOOGLE_API_KEY ||
-        process.env.VITE_GEMINI_API_KEY ||
-        ""
-    );
-}
 
 function parseGeminiJson(text) {
     const cleanedText = String(text || "")
@@ -140,24 +125,15 @@ export const generateQuestions = async (req, res) => {
         return res.status(400).json({ message: "Topic is required" });
     }
 
-    const apiKey = getGeminiApiKey();
-    if (!apiKey) {
+    if (!GEMINI_API_KEY) {
         return res.status(503).json({
-            message: "AI question generation is not configured on the backend. Add GEMINI_API_KEY_APTITUDE or GEMINI_API_KEY in production.",
+            message: "AI is not configured. Set GEMINI_API_KEY in the backend .env file.",
         });
     }
 
     console.log("Generating questions for topic:", topic);
     try {
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({
-            model: GEMINI_MODEL,
-            generationConfig: {
-                responseMimeType: "application/json",
-                temperature: 0.7,
-                maxOutputTokens: 4096,
-            },
-        });
+        const ai = getGeminiClient();
 
         const prompt = `
             Generate 3 unique aptitude questions for the topic: "${topic}".
@@ -178,9 +154,17 @@ export const generateQuestions = async (req, res) => {
             Do not include any other text or markdown formatting except the JSON array.
         `;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+        const response = await ai.models.generateContent({
+            model: GEMINI_MODEL,
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            config: {
+                responseMimeType: "application/json",
+                temperature: 0.7,
+                maxOutputTokens: 4096,
+            },
+        });
+
+        const text = response.text;
         const questionsData = normalizeQuestions(parseGeminiJson(text), topic);
         
         const savedQuestions = await Question.insertMany(questionsData);

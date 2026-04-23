@@ -3,16 +3,21 @@ import {
     addLecture, 
     getLectures, 
     updateLecture, 
-    deleteLecture 
+    deleteLecture,
+    getLearningProgress,
+    updateLearningProgress,
 } from '../../controllers/aptitude/learnController.js';
+import adminMiddleware from '../../middleware/admin.middleware.js';
 
 const router = express.Router();
 
+router.get('/progress/:courseType', getLearningProgress);
+router.put('/progress/:courseType', updateLearningProgress);
 
 router.get('/', getLectures);
 
-router.post('/', addLecture);
-router.put('/:id', updateLecture);
-router.delete('/:id', deleteLecture);
+router.post('/', adminMiddleware, addLecture);
+router.put('/:id', adminMiddleware, updateLecture);
+router.delete('/:id', adminMiddleware, deleteLecture);
 
 export default router;

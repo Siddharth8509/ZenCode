@@ -16,7 +16,7 @@ import {
 } from "./ui/form";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
-import { chatSession } from "@/scripts";
+import { generateMockInterviewQuestions } from "@/scripts";
 import {
   addDoc,
   collection,
@@ -65,51 +65,13 @@ export const FormMockInterview = ({ initialData }) => {
   const breadCrumpPage = initialData ? initialData?.position : "Create";
   const actions = initialData ? "Save Changes" : "Generate Interview";
 
-  const cleanAiResponse = (responseText) => {
-    let cleanText = responseText.trim();
-
-    // Try direct parse first (works when responseMimeType is application/json)
-    try {
-      const parsed = JSON.parse(cleanText);
-      if (Array.isArray(parsed)) return parsed;
-      // If Gemini wraps it in an object, try to find the array inside
-      const keys = Object.keys(parsed);
-      for (const key of keys) {
-        if (Array.isArray(parsed[key])) return parsed[key];
-      }
-    } catch {
-      // Not valid JSON yet, try cleaning
-    }
-
-    // Fallback: strip markdown code fences and extract array
-    cleanText = cleanText.replace(/```(?:json)?\s*/gi, "").replace(/```/g, "").trim();
-    const jsonArrayMatch = cleanText.match(/\[[\s\S]*\]/);
-    if (jsonArrayMatch) {
-      try {
-        return JSON.parse(jsonArrayMatch[0]);
-      } catch (error) {
-        throw new Error("Invalid JSON format: " + error?.message);
-      }
-    }
-
-    throw new Error("No JSON array found in response");
-  };
-
   const generateAiResponse = async (data) => {
-    const prompt = `
-        Generate a JSON array of 8 technical interview questions with concise answers (2-4 sentences each) based on this job info:
-
-        - Position: ${data?.position}
-        - Description: ${data?.description}
-        - Experience: ${data?.experience} years
-        - Tech Stack: ${data?.techStack}
-
-        Return ONLY a JSON array like: [{"question": "...", "answer": "..."}]
-        Keep answers brief but informative. No markdown, no code blocks, no extra text.
-        `;
-
-    const aiResult = await chatSession.sendMessage(prompt);
-    return cleanAiResponse(aiResult.response.text());
+    return generateMockInterviewQuestions({
+      position: data?.position,
+      description: data?.description,
+      experience: data?.experience,
+      techStack: data?.techStack,
+    });
   };
 
   const onSubmit = async (data) => {
@@ -140,7 +102,11 @@ export const FormMockInterview = ({ initialData }) => {
       navigate("/mock-interview", { replace: true });
     } catch (error) {
       console.log(error);
-      toast.error("Error", { description: "Something went wrong. Please try again." });
+      toast.error("Error", {
+        description:
+          error?.response?.data?.error ||
+          "Something went wrong. Please try again.",
+      });
     } finally {
       setLoading(false);
     }

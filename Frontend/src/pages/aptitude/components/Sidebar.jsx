@@ -1,13 +1,9 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
 import {
     CalculatorIcon, ReceiptPercentIcon, ScaleIcon, BanknotesIcon, CurrencyDollarIcon,
     BoltIcon, ArrowTrendingUpIcon, ChartBarIcon, LightBulbIcon, ArrowTrendingDownIcon,
     HeartIcon, CpuChipIcon, ChatBubbleOvalLeftEllipsisIcon, LanguageIcon, BookOpenIcon,
-    ShieldCheckIcon, LockClosedIcon, XMarkIcon, EyeIcon, EyeSlashIcon
+    XMarkIcon
 } from '@heroicons/react/24/outline';
-import { ShieldCheckIcon as ShieldCheckSolid } from '@heroicons/react/24/solid';
 
 const menuData = {
     Quantitative: {
@@ -41,27 +37,7 @@ const menuData = {
 };
 
 const Sidebar = ({ onSelectTopic, activeTopic, isMobileOpen, setIsMobileOpen, selectedCompany, onSelectCompany }) => {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [passcode, setPasscode] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
-    const navigate = useNavigate();
-
     const companies = ["TCS", "Infosys", "Wipro", "Cognizant", "Amazon", "Accenture"];
-
-    const handleVerify = (e) => {
-        e.preventDefault();
-        const secretCode = import.meta.env.VITE_ADMIN_SECRET;
-        if (passcode === secretCode) {
-            sessionStorage.setItem("adminToken", "zencode_authenticated");
-            toast.success("Access Granted!");
-            setIsModalOpen(false);
-            setPasscode("");
-            setIsMobileOpen(false);
-            navigate('/aptitude/admin');
-        } else {
-            toast.error("Incorrect Secret Key");
-        }
-    };
 
     const handleTopicClick = (topicName) => {
         onSelectTopic(topicName);
@@ -164,41 +140,6 @@ const Sidebar = ({ onSelectTopic, activeTopic, isMobileOpen, setIsMobileOpen, se
                     </button>
                 </div> */}
             </aside>
-
-            {isModalOpen && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-                    <div className="glass-panel w-full max-w-sm rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden p-8 animate-in zoom-in-95">
-                        <div className="flex justify-between items-center mb-6">
-                            <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-2xl">
-                                <ShieldCheckSolid className="w-6 h-6" />
-                            </div>
-                            <button onClick={() => setIsModalOpen(false)} className="p-2 text-neutral-500 hover:bg-white/10 hover:text-white rounded-full transition-colors">
-                                <XMarkIcon className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <h2 className="text-2xl font-black text-white mb-2">Security Check</h2>
-                        <p className="text-sm text-neutral-400 mb-6">Enter secret key to access the admin dashboard.</p>
-                        <form onSubmit={handleVerify} className="space-y-4">
-                            <div className="relative">
-                                <input 
-                                    autoFocus 
-                                    type={showPassword ? "text" : "password"} 
-                                    className="w-full p-4 pr-12 bg-neutral-900 rounded-xl border border-white/10 text-white font-bold outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-all placeholder-neutral-600" 
-                                    placeholder="Enter vault key..."
-                                    value={passcode} 
-                                    onChange={(e) => setPasscode(e.target.value)} 
-                                />
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors">
-                                    {showPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
-                                </button>
-                            </div>
-                            <button type="submit" className="w-full py-4 bg-gradient-to-r from-orange-400 to-amber-500 hover:from-orange-500 hover:to-amber-600 text-black rounded-xl font-black shadow-[0_0_15px_rgba(245,158,11,0.4)] transition-all transform hover:-translate-y-0.5">
-                                Authorize Access
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            )}
         </>
     );
 };
