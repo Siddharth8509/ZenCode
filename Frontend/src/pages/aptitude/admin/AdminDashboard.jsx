@@ -137,7 +137,7 @@ const AdminDashboard = () => {
                 Questions ({questions.length})
               </button>
 
-              <button
+              {/* <button
                 onClick={() => {
                   setViewMode("lectures");
                   setSearchTerm("");
@@ -148,7 +148,7 @@ const AdminDashboard = () => {
                   }`}
               >
                 Lectures ({lectures.length})
-              </button>
+              </button> */}
 
               <button
                 onClick={() => {
@@ -168,12 +168,12 @@ const AdminDashboard = () => {
           {/* ACTION BUTTONS */}
 
           <div className="flex gap-2">
-            <Link
+            {/* <Link
               to="/aptitude/admin/add-lecture"
               className="flex items-center gap-2 px-4 py-2 bg-neutral-900 border border-white/10 rounded-lg text-sm font-bold text-white hover:bg-white/5 transition-all"
             >
               <VideoCameraIcon className="w-4 h-4 text-orange-400" /> Lecture
-            </Link>
+            </Link> */}
 
             <Link
               to="/aptitude/admin/add"
