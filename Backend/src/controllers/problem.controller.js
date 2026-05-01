@@ -231,7 +231,7 @@ const deleteProblem = async (req, res) => {
             return res.status(400).send("Please enter a valid id");
 
         if (!mongoose.Types.ObjectId.isValid(id))
-            res.status(400).send("Invalid id")
+            return res.status(400).send("Invalid id")
 
         const existingProblem = await problem.findById(id);
         if (!existingProblem)

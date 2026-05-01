@@ -107,6 +107,7 @@ function App() {
   const [backendReady, setBackendReady] = useState(!/(?:^|\.)(?:onrender|render)\.com/i.test(API_HOSTNAME));
   const [secondsRemaining, setSecondsRemaining] = useState(COLD_START_WAIT_SECONDS);
   const isProblemIdeRoute = /^\/problem\/[^/]+$/.test(location.pathname);
+  const isAuthRoute = location.pathname === '/login' || location.pathname === '/signup';
   const showGlobalNavbar = !isProblemIdeRoute;
   const isAdmin = user?.role === 'admin';
 
@@ -171,7 +172,7 @@ function App() {
     <div className='app'>
       {/* Global Navbar — always visible */}
       {showGlobalNavbar && <Navbar />}
-      <div style={{ paddingTop: showGlobalNavbar ? '64px' : '0px' }}>
+      <div style={{ paddingTop: showGlobalNavbar && !isAuthRoute ? '64px' : '0px' }}>
         <Suspense fallback={<RouteFallback showGlobalNavbar={showGlobalNavbar} />}>
           <Routes>
           <Route path="/" element={<Homepage />} />

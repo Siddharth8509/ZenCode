@@ -1,30 +1,52 @@
-// This page handles sign-in and the small toast handoff after logout.
-// It is designed to feel polished while still staying close to the auth slice underneath.
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  ArrowRight,
+  Binary,
+  LockKeyhole,
+  Mail,
+  Mic,
+  Target,
+} from "lucide-react";
 import { loginUser } from "../authSlice";
-import { useSelector, useDispatch } from "react-redux";
-import { useNavigate, useLocation } from "react-router-dom";
+import ZenCodeMark from "../components/ZenCodeMark";
 
+const LoginSchema = z.object({
+  emailId: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Please enter a valid password"),
+});
 
-// Schema
-const LoginSchema = z
-  .object({
-    emailId: z.string().email("Invalid email address"),
-    password: z.string().min(8, "Please enter a valid password"),
-  })
+const returnPoints = [
+  {
+    icon: Binary,
+    title: "Your DSA roadmap is waiting",
+    desc: "Pick up from your solved patterns and continue the next sprint.",
+  },
+  {
+    icon: Target,
+    title: "Aptitude and revision stay in sync",
+    desc: "Keep OA prep moving without losing topic-wise momentum.",
+  },
+  {
+    icon: Mic,
+    title: "Mock interviews stay one click away",
+    desc: "Jump back into communication practice when you need it most.",
+  },
+];
 
 export default function Loginpage() {
-
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, loading } = useSelector((state) => state.auth);
   const [toast, setToast] = useState(null);
   const [loginPending, setLoginPending] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const toastTimerRef = useRef(null);
 
   const pushToast = (payload) => {
@@ -41,7 +63,7 @@ export default function Loginpage() {
     if (isAuthenticated && !loginPending) {
       navigate("/problemset");
     }
-  }, [isAuthenticated, loginPending, navigate])
+  }, [isAuthenticated, loginPending, navigate]);
 
   useEffect(() => {
     const toastFromNav = location.state?.toast;
@@ -49,7 +71,7 @@ export default function Loginpage() {
       pushToast(toastFromNav);
       navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location.state, location.pathname, navigate]);
+  }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
     return () => {
@@ -59,9 +81,17 @@ export default function Loginpage() {
     };
   }, []);
 
-  const { register, handleSubmit, formState: { errors }, } = useForm({ resolver: zodResolver(LoginSchema), });
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(LoginSchema),
+  });
+
   const onSubmit = (data) => {
     setLoginPending(true);
+
     dispatch(loginUser(data))
       .unwrap()
       .then(() => {
@@ -74,136 +104,187 @@ export default function Loginpage() {
       });
   };
 
-  const [showPassword, setShowPassword] = useState(false);
-
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-orange-500/20">
+    <div className="h-dvh overflow-hidden bg-[#050505] text-white selection:bg-orange-500/20">
+      {/* Background */}
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute inset-0 bg-[#050505]" />
+        <div className="absolute inset-0 opacity-[0.05] [background-image:linear-gradient(rgba(255,255,255,0.9)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.9)_1px,transparent_1px)] [background-size:36px_36px]" />
+        <div className="absolute inset-x-0 top-0 h-[28rem] bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.12),transparent_58%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,5,5,0.2),rgba(5,5,5,0.95))]" />
+      </div>
+
+      {/* Toast */}
       {toast && (
-        <div className="fixed top-6 right-6 z-50 animate-pop-in">
+        <div className="fixed right-6 top-24 z-50 animate-pop-in">
           <div
-            className={`rounded-xl border px-4 py-3 text-sm shadow-2xl ${toast.type === "success"
-              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-200"
-              : "bg-rose-500/10 border-rose-500/30 text-rose-200"
-              }`}
+            className={`rounded-2xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-xl ${
+              toast.type === "success"
+                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-100"
+                : "border-rose-500/30 bg-rose-500/10 text-rose-100"
+            }`}
           >
             <div className="font-semibold">
               {toast.type === "success" ? "Success" : "Error"}
             </div>
-            <div className="text-xs text-neutral-300 mt-1">{toast.message}</div>
+            <div className="mt-1 text-xs text-neutral-200/80">{toast.message}</div>
           </div>
         </div>
       )}
-      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="relative hidden lg:flex items-center justify-center p-12 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-black via-neutral-900 to-black" />
-          <div className="absolute -top-24 left-[-20%] w-[60%] h-[60%] bg-orange-500/10 blur-[160px] rounded-full" />
-          <div className="absolute bottom-[-30%] right-[-10%] w-[60%] h-[60%] bg-rose-500/10 blur-[160px] rounded-full" />
-          <div className="relative z-10 max-w-md space-y-6">
-            <div className="text-sm uppercase tracking-[0.4em] text-neutral-400">ZenCode</div>
-            <h1 className="text-4xl font-semibold leading-tight">
-              Practice with purpose. Build interview-ready skills.
+
+      {/* Main layout — two columns, vertically centered */}
+      <div className="relative z-10 flex h-full items-center justify-center px-6 lg:px-12">
+        <div className="grid w-full max-w-6xl gap-8 lg:grid-cols-2">
+
+          {/* Left — branding panel */}
+          <div className="hidden lg:flex flex-col justify-center">
+            <div className="flex items-center gap-3">
+              <ZenCodeMark className="h-10 w-10" />
+              <span className="text-xs uppercase tracking-[0.32em] text-neutral-500">ZenCode</span>
+            </div>
+
+            <h1 className="mt-5 text-3xl font-semibold leading-tight tracking-tight xl:text-4xl">
+              Jump back into the system you already started building.
             </h1>
-            <p className="text-neutral-400">
-              Daily prompts, company tracks, and structured DSA learning in one place.
+            <p className="mt-3 text-sm leading-6 text-neutral-400">
+              Your prep stack stays organized: DSA, aptitude, learning, resume review, and mock practice all in one place.
             </p>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              {["Guided paths", "Timed mocks", "Progress tracking", "Community insights"].map((item) => (
-                <div key={item} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-neutral-300">
-                  {item}
-                </div>
-              ))}
+
+            <div className="mt-6 space-y-3">
+              {returnPoints.map((p) => {
+                const Icon = p.icon;
+                return (
+                  <div key={p.title} className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04]">
+                      <Icon className="h-4 w-4 text-orange-300" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-white">{p.title}</div>
+                      <p className="text-[13px] leading-5 text-neutral-500">{p.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center justify-center px-6 py-16">
-          <div className="w-full max-w-md">
-            <div className="mb-8">
-              <h2 className="text-3xl font-semibold">Sign in</h2>
-              <p className="text-neutral-400 text-sm mt-2">Welcome back. Continue your learning streak.</p>
-            </div>
-
-            <div className="space-y-4">
-              <button
-                type="button"
-                className="w-full rounded-xl border border-white/10 bg-white/5 py-3 text-sm font-semibold hover:bg-white/10 transition-colors text-neutral-300"
+          {/* Right — login form */}
+          <div className="flex items-center justify-center">
+            <div className="surface-card w-full max-w-md rounded-[2rem] p-6 md:p-8">
+              <Link
+                to="/"
+                className="inline-flex items-center gap-2 text-sm font-medium text-neutral-400 transition-colors hover:text-white"
               >
-                Continue with Google
-              </button>
-              <button
-                type="button"
-                className="w-full rounded-xl border border-white/10 bg-white/5 py-3 text-sm font-semibold hover:bg-white/10 transition-colors text-neutral-300"
-              >
-                Continue with GitHub
-              </button>
-            </div>
+                <ArrowRight className="h-4 w-4 rotate-180" />
+                Back to homepage
+              </Link>
 
-            <div className="my-6 flex items-center gap-4 text-xs text-neutral-500">
-              <div className="h-px flex-1 bg-white/10" />
-              OR
-              <div className="h-px flex-1 bg-white/10" />
-            </div>
-
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-              <div>
-                <label className="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-2 block">Email</label>
-                <input
-                  {...register("emailId")}
-                  placeholder="you@example.com"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all placeholder:text-neutral-400"
-                />
-                <p className="text-red-400 text-xs mt-1">{errors.emailId?.message}</p>
+              <div className="brand-chip mt-5 w-fit">
+                <span className="h-2 w-2 rounded-full bg-orange-300" />
+                Sign In
               </div>
-
-              <div>
-                <label className="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-2 block">Password</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    {...register("password")}
-                    placeholder="Enter your password"
-                    autoComplete="current-password"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400 transition-all placeholder:text-neutral-400 pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-300 transition-colors"
-                  >
-                    {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
-                  </button>
-                </div>
-                <p className="text-red-400 text-xs mt-1">{errors.password?.message}</p>
-              </div>
-
-              <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center gap-2 text-neutral-500">
-                  <input type="checkbox" className="h-4 w-4 rounded border-white/20 bg-white/5 text-orange-400 focus:ring-orange-400" />
-                  Remember me
-                </label>
-                <span
-                  className="text-orange-400 hover:text-orange-300 font-semibold cursor-pointer"
-                  onClick={() => navigate("/signup")}
-                >
-                  Create account
-                </span>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold text-lg rounded-xl shadow-[0_12px_30px_rgba(249,115,22,0.15)] hover:from-orange-600 hover:to-red-600 hover:scale-[1.01] active:scale-[0.98] transition-all duration-300 disabled:opacity-70 disabled:grayscale"
-              >
-                {loading ? "Signing in..." : "Log In"}
-              </button>
-
-              <p className="text-center text-sm text-neutral-400">
-                Don&apos;t have an account?
-                <span className="ml-2 text-orange-400 hover:text-orange-300 font-semibold cursor-pointer" onClick={() => navigate("/signup")}>
-                  Sign Up
-                </span>
+              <h2 className="mt-3 text-2xl font-semibold tracking-tight md:text-3xl">
+                Continue your prep.
+              </h2>
+              <p className="mt-1.5 text-sm leading-6 text-neutral-400">
+                Sign in with the email you registered with.
               </p>
-            </form>
+
+              <form onSubmit={handleSubmit(onSubmit)} className="mt-5 space-y-3.5">
+                <div className="group">
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.28em] text-neutral-500 transition-colors group-focus-within:text-orange-300">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+                      <Mail className="h-4 w-4 text-neutral-500 transition-colors group-focus-within:text-orange-300" />
+                    </div>
+                    <input
+                      type="email"
+                      autoComplete="email"
+                      {...register("emailId")}
+                      placeholder="you@example.com"
+                      className="w-full rounded-xl border border-white/10 bg-black/35 py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-neutral-600 focus:border-orange-400/40 focus:outline-none focus:ring-1 focus:ring-orange-400/40"
+                    />
+                  </div>
+                  {errors.emailId && <p className="mt-1 text-xs text-red-400">{errors.emailId.message}</p>}
+                </div>
+
+                <div className="group">
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.28em] text-neutral-500 transition-colors group-focus-within:text-orange-300">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+                      <LockKeyhole className="h-4 w-4 text-neutral-500 transition-colors group-focus-within:text-orange-300" />
+                    </div>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      {...register("password")}
+                      placeholder="Enter your password"
+                      className="w-full rounded-xl border border-white/10 bg-black/35 py-2.5 pl-10 pr-11 text-sm text-white placeholder:text-neutral-600 focus:border-orange-400/40 focus:outline-none focus:ring-1 focus:ring-orange-400/40"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-neutral-500 transition-colors hover:text-white"
+                    >
+                      {showPassword ? (
+                        <EyeSlashIcon className="h-4 w-4" />
+                      ) : (
+                        <EyeIcon className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                  {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password.message}</p>}
+                </div>
+
+                <div className="flex items-center justify-between text-sm">
+                  <label className="flex items-center gap-2 text-neutral-400">
+                    <div className="relative flex items-center justify-center">
+                      <input
+                        type="checkbox"
+                        className="peer h-3.5 w-3.5 appearance-none rounded border border-white/20 bg-black/35 checked:border-orange-500 checked:bg-orange-500"
+                      />
+                      <svg
+                        className="pointer-events-none absolute h-2.5 w-2.5 text-white opacity-0 transition-opacity peer-checked:opacity-100"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    </div>
+                    <span className="text-xs">Remember me</span>
+                  </label>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="group relative w-full overflow-hidden rounded-xl bg-white py-2.5 text-sm font-semibold text-black transition-all duration-300 hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-black/10 to-transparent group-hover:animate-[shimmer_1.5s_infinite]" />
+                  <span className="relative inline-flex items-center gap-2">
+                    {loading ? "Signing you in..." : "Sign In"}
+                  </span>
+                </button>
+
+                <p className="text-center text-sm text-neutral-500">
+                  New to ZenCode?
+                  <Link
+                    to="/signup"
+                    className="ml-2 font-semibold text-white transition-colors hover:text-orange-300"
+                  >
+                    Create your account
+                  </Link>
+                </p>
+              </form>
+            </div>
           </div>
         </div>
       </div>

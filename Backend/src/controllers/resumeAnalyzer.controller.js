@@ -1,5 +1,5 @@
 import { getGeminiClient, GEMINI_MODEL as BASE_MODEL, GEMINI_API_KEY } from "../config/ai.js";
-import { PDFParse } from "pdf-parse";
+import pdfParse from "pdf-parse";
 import mammoth from "mammoth";
 import mongoose from "mongoose";
 import ResumeAnalysis from "../model/resumeAnalysis.js";
@@ -53,14 +53,8 @@ function parseGeminiJson(text) {
 }
 
 async function extractTextFromPdf(buffer) {
-    const parser = new PDFParse({ data: buffer });
-
-    try {
-        const result = await parser.getText();
-        return result.text || "";
-    } finally {
-        await parser.destroy();
-    }
+    const result = await pdfParse(buffer);
+    return result.text || "";
 }
 
 async function extractResumeText(file) {
@@ -144,7 +138,7 @@ function normalizeAnalysisPayload(payload, modelUsed) {
 
 function buildAnalysisPrompt({ resumeText, targetRole, jobDescription }) {
     const currentDate = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    
+
     return `
 You are an expert resume analyst and ATS optimization specialist.
 The current date is ${currentDate}. Keep this in mind when evaluating resume timelines, "current" roles, and past vs. future dates.

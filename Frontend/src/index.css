@@ -1,6 +1,6 @@
 /* This stylesheet defines the global visual language for ZenCode:
    fonts, motion helpers, glass surfaces, and a few utility classes that Tailwind alone would be noisy for. */
-@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap");
 @import "tailwindcss";
 
 @theme {
@@ -31,11 +31,19 @@
 }
 
 body {
-    background-color: #000000;
-    /* solid black */
+    font-family: var(--font-sans);
+    background-color: #050505;
+    background-image:
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.03), transparent 26%),
+        linear-gradient(180deg, #050505 0%, #070707 48%, #020202 100%);
     color: #e2e8f0;
     overflow-x: hidden;
     overflow-y: auto;
+}
+
+::selection {
+    background: rgba(249, 115, 22, 0.22);
+    color: #fff7ed;
 }
 
 /* Custom Scrollbar */
@@ -171,6 +179,40 @@ body {
     box-shadow: 0 18px 35px -28px rgba(0, 0, 0, 0.8);
 }
 
+.surface-card {
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012)),
+        rgba(10, 10, 10, 0.78);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+        0 28px 70px -54px rgba(0, 0, 0, 0.9),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.brand-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.55rem 1rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: #d4d4d8;
+}
+
+.ambient-grid {
+    background-image:
+        linear-gradient(rgba(148, 163, 184, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.1) 1px, transparent 1px);
+    background-size: 28px 28px;
+}
+
 .text-glow {
     text-shadow: 0 0 30px rgba(249, 115, 22, 0.3);
 }
@@ -196,4 +238,72 @@ html,
 body,
 #root {
     min-height: 100%;
+}
+
+@keyframes onloadopacity {
+  24% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes onloadbgt {
+  0% {
+    translate: 0 -70%;
+    opacity: 0.3;
+  }
+  100% {
+    translate: 0 -64%;
+    opacity: 0.8;
+  }
+}
+
+@keyframes onloadbgb {
+  0% {
+    translate: 0 70%;
+    opacity: 0.3;
+  }
+  100% {
+    translate: 0 64%;
+    opacity: 0.8;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -16px, 0) scale(1.03);
+  }
+}
+
+.animate-drift {
+  animation: drift 10s ease-in-out infinite;
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
 }
