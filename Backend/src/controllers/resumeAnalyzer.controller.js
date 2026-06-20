@@ -1,5 +1,5 @@
 import { getGeminiClient, GEMINI_MODEL as BASE_MODEL, GEMINI_API_KEY } from "../config/ai.js";
-import pdfParse from "pdf-parse";
+import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
 import mongoose from "mongoose";
 import ResumeAnalysis from "../model/resumeAnalysis.js";
@@ -53,8 +53,14 @@ function parseGeminiJson(text) {
 }
 
 async function extractTextFromPdf(buffer) {
-    const result = await pdfParse(buffer);
-    return result.text || "";
+    const parser = new PDFParse({ data: buffer });
+
+    try {
+        const result = await parser.getText();
+        return result.text || "";
+    } finally {
+        await parser.destroy();
+    }
 }
 
 async function extractResumeText(file) {
