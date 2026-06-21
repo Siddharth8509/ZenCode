@@ -27,6 +27,21 @@ const normalizeOptions = (options) => {
     return optionSource.map((option) => toText(option)).filter(Boolean);
 };
 
+const parseSolutionToSteps = (solutionText) => {
+    if (!solutionText) return [];
+    
+    let lines = solutionText.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+    if (lines.length <= 1) {
+        const sentenceRegex = /(?<=[.!?])\s+(?=[A-Z0-9])/g;
+        lines = solutionText.split(sentenceRegex).map(line => line.trim()).filter(Boolean);
+    }
+    
+    // Clean up list prefixes like "Step 1:", "1.", "- ", "* ", "Step 1 -", etc. from each line
+    return lines.map((line) => {
+        return line.replace(/^(?:Step\s+\d+[:\-]?|\d+\.\s*|[\-\*\u2022]\s*)/i, '').trim();
+    }).filter(Boolean);
+};
+
 const QuestionDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -206,11 +221,60 @@ const QuestionDetail = () => {
 
                         {solution && (
                             <div className="text-sm text-neutral-300 border-t border-white/10 pt-6 leading-relaxed font-medium mt-4">
-                                <span className="font-bold text-emerald-400 block mb-3 uppercase text-[10px] tracking-wider relative flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                                    Solution / Explanation
+                                <span className="font-bold text-emerald-400 block mb-5 uppercase text-[11px] tracking-wider relative flex items-center gap-2">
+                                    <svg className="w-4 h-4 text-emerald-400 animate-pulse" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                    </svg>
+                                    Step-by-Step Solution
                                 </span>
-                                {solution}
+                                
+                                <div className="space-y-0 pl-1 mt-2">
+                                    {parseSolutionToSteps(solution).map((step, idx, arr) => {
+                                        const isLast = idx === arr.length - 1;
+                                        return (
+                                            <div key={idx} className="flex gap-4 group animate-rise" style={{ animationDelay: `${idx * 100}ms` }}>
+                                                {/* Timeline Column */}
+                                                <div className="flex flex-col items-center">
+                                                    {/* Dot */}
+                                                    <div className={`w-5 h-5 rounded-full border-2 bg-neutral-950 flex items-center justify-center transition-all duration-300 group-hover:scale-110 ${
+                                                        isLast 
+                                                            ? "border-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]" 
+                                                            : "border-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+                                                    }`}>
+                                                        <div className={`w-2 h-2 rounded-full ${
+                                                            isLast ? "bg-orange-500 animate-pulse" : "bg-emerald-500"
+                                                        }`} />
+                                                    </div>
+                                                    
+                                                    {/* Line */}
+                                                    {!isLast && (
+                                                        <div className="w-[2px] flex-grow my-1 bg-neutral-800/80" />
+                                                    )}
+                                                </div>
+                                                
+                                                {/* Content Card Column */}
+                                                <div className="flex-grow pb-5">
+                                                    <div className={`p-4 rounded-2xl border transition-all duration-300 backdrop-blur-md ${
+                                                        isLast 
+                                                            ? "bg-gradient-to-r from-orange-500/10 to-red-500/5 border-orange-500/30 hover:border-orange-500/50 hover:bg-orange-500/15 shadow-[0_0_20px_rgba(249,115,22,0.08)]" 
+                                                            : "bg-neutral-900/50 border-white/5 hover:border-emerald-500/20 hover:bg-emerald-500/[0.02]"
+                                                    }`}>
+                                                        <div className="flex justify-between items-center mb-1">
+                                                            <span className={`text-[10px] font-black uppercase tracking-widest ${
+                                                                isLast ? "text-orange-400" : "text-emerald-400/80"
+                                                            }`}>
+                                                                {isLast ? "Final Conclusion" : `Step ${idx + 1}`}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-sm text-neutral-300 font-medium leading-relaxed">
+                                                            {step}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
 
