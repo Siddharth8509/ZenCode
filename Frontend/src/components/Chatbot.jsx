@@ -43,6 +43,42 @@ function serializeConversation(messages) {
         }));
 }
 
+const chatMarkdownComponents = {
+    p: ({ node: _node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+    ul: ({ node: _node, ...props }) => <ul className="mb-2 list-disc space-y-1 pl-5 last:mb-0" {...props} />,
+    ol: ({ node: _node, ...props }) => <ol className="mb-2 list-decimal space-y-1 pl-5 last:mb-0" {...props} />,
+    li: ({ node: _node, ...props }) => <li className="pl-1" {...props} />,
+    a: ({ node: _node, ...props }) => (
+        <a className="break-all text-orange-200 underline underline-offset-2" {...props} />
+    ),
+    code: ({ node: _node, inline, className, children, ...props }) =>
+        inline ? (
+            <code
+                className={`break-words rounded bg-black/40 px-1.5 py-0.5 font-mono text-[0.85em] text-orange-100 ${className || ""}`}
+                {...props}
+            >
+                {children}
+            </code>
+        ) : (
+            <code className={`block min-w-0 whitespace-pre font-mono text-xs ${className || ""}`} {...props}>
+                {children}
+            </code>
+        ),
+    pre: ({ node: _node, ...props }) => (
+        <pre
+            className="my-2 max-w-full overflow-x-auto rounded-lg border border-white/10 bg-black/45 p-3"
+            {...props}
+        />
+    ),
+    table: ({ node: _node, ...props }) => (
+        <div className="my-2 max-w-full overflow-x-auto">
+            <table className="w-full min-w-max border-collapse text-left text-xs" {...props} />
+        </div>
+    ),
+    th: ({ node: _node, ...props }) => <th className="border border-white/10 px-2 py-1 font-semibold" {...props} />,
+    td: ({ node: _node, ...props }) => <td className="border border-white/10 px-2 py-1" {...props} />,
+};
+
 class ErrorBoundary extends React.Component {
     constructor(props) {
         super(props);
@@ -146,16 +182,19 @@ function ChatbotInner({ prop, code, language }) {
         <div className="flex h-full flex-col bg-black">
             <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4" ref={messagesRef}>
                 {messages.map((message) => (
-                    <div key={message.id} className={`chat ${message.role === "assistant" ? "chat-start" : "chat-end"}`}>
+                    <div
+                        key={message.id}
+                        className={`chat min-w-0 ${message.role === "assistant" ? "chat-start" : "chat-end"}`}
+                    >
                         <div
-                            className={`chat-bubble max-w-[90%] text-sm leading-relaxed ${
+                            className={`chat-bubble min-w-0 max-w-[90%] overflow-hidden text-sm leading-relaxed ${
                                 message.role === "assistant"
                                     ? "border border-white/10 bg-neutral-900 text-neutral-200"
                                     : "border border-orange-500/30 bg-orange-500/20 text-orange-100"
                             }`}
                         >
-                            <div className="whitespace-pre-wrap break-words">
-                                <Markdown>{message.text}</Markdown>
+                            <div className="min-w-0 max-w-full overflow-hidden break-words">
+                                <Markdown components={chatMarkdownComponents}>{message.text}</Markdown>
                             </div>
                         </div>
                     </div>

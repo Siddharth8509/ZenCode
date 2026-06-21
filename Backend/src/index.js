@@ -1,7 +1,7 @@
 // This is the backend entry point.
 // It boots Express, connects the supporting services, and mounts every API router.
 import express from "express";
-import dotenv from "dotenv";
+import "./env.js";
 import cookieParser from "cookie-parser";
 import dbConnection from "./config/database.js";
 import authRouter from "./routes/auth.routes.js";
@@ -22,7 +22,7 @@ import resumeBuilderRouter from "./routes/resume-builder/resumeRoutes.js";
 import resumeBuilderAiRouter from "./routes/resume-builder/aiRoutes.js";
 import learningRoutes from "./routes/learning.routes.js";
 
-dotenv.config({ path: fileURLToPath(new URL("../.env", import.meta.url)) });
+
 const app = express();
 app.set("trust proxy", 1);
 
