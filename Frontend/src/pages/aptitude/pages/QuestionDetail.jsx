@@ -39,7 +39,7 @@ const parseSolutionToSteps = (solutionText) => {
     // Clean up list prefixes like "Step 1:", "1.", "- ", "* ", "Step 1 -", etc. from each line
     return lines.map((line) => {
         return line.replace(/^(?:Step\s+\d+[:\-]?|\d+\.\s*|[\-\*\u2022]\s*)/i, '').trim();
-    }).filter(Boolean);
+    }).filter(Boolean); 
 };
 
 const QuestionDetail = () => {
