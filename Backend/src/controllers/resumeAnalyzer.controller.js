@@ -53,9 +53,12 @@ function parseGeminiJson(text) {
 }
 
 async function extractTextFromPdf(buffer) {
-    const result = await pdfParse(buffer);
+    const parser = new PDFParse({ data: buffer });
+    const result = await parser.getText();
+    await parser.destroy();
     return result.text || "";
 }
+
 
 async function extractResumeText(file) {
     if (!file?.buffer) {
