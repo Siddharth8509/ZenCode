@@ -92,11 +92,11 @@ const AdminUpload = () => {
     };
 
     return (
-        <div className="min-h-screen bg-black p-3 text-white">
+        <div className="min-h-screen bg-black p-2 text-white">
             <div className="max-w-[1700px] mx-auto">
 
                 {/* HEADER */}
-                <div className="flex justify-between items-center mb-6 mt-2">
+                <div className="flex justify-between items-center mb-3 mt-2">
                     <button
                         onClick={() => navigate('/aptitude/admin')}
                         className="flex items-center gap-2 text-neutral-400 hover:text-white font-semibold transition-colors"
@@ -123,7 +123,7 @@ const AdminUpload = () => {
 
                         <textarea
                             placeholder="Enter question..."
-                            rows={2}
+                            rows={4}
                             className="w-full mt-2 p-4 rounded-xl border border-white/5 bg-neutral-900 placeholder-neutral-500 text-white font-medium outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-all"
                             required
                             onChange={(e) =>

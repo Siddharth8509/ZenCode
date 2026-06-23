@@ -9,35 +9,65 @@ const menuData = {
     Quantitative: {
         icon: <CalculatorIcon className="w-5 h-5" />,
         topics: [
-            { name: "Percentage", icon: <ReceiptPercentIcon className="w-4 h-4" /> },
+            { name: "Number System", icon: <ReceiptPercentIcon className="w-4 h-4" /> },
+            { name: "Averages", icon: <ChartBarIcon className="w-4 h-4" /> },   
             { name: "Ratio and Proportion", icon: <ScaleIcon className="w-4 h-4" /> },
+            { name: "Partnership", icon: <ReceiptPercentIcon className="w-4 h-4" /> },
+            { name: "Percentage", icon: <ReceiptPercentIcon className="w-4 h-4" /> },
             { name: "Profit and Loss", icon: <BanknotesIcon className="w-4 h-4" /> },
-            { name: "Simple Interest", icon: <CurrencyDollarIcon className="w-4 h-4" /> },
-            { name: "Compound Interest", icon: <CurrencyDollarIcon className="w-4 h-4" /> },
             { name: "Time and Work", icon: <BoltIcon className="w-4 h-4" /> },
-            { name: "Time and Distance", icon: <ArrowTrendingUpIcon className="w-4 h-4" /> },
-            { name: "Averages", icon: <ChartBarIcon className="w-4 h-4" /> },
+            { name: "Data Interpretation", icon: <CurrencyDollarIcon className="w-4 h-4" /> },
+            { name: "Pipes and Cisterns", icon: <BoltIcon className="w-4 h-4" /> },
+            { name: "Chain Rule", icon: <BoltIcon className="w-4 h-4" /> },
+            { name: "Time, Distance and Speed", icon: <ArrowTrendingUpIcon className="w-4 h-4" /> },
+            { name: "Boats and Streams", icon: <ArrowTrendingUpIcon className="w-4 h-4" /> },
+            { name: "Probability", icon: <ArrowTrendingUpIcon className="w-4 h-4" /> },
+            { name: "Permutations and Combinations", icon: <ArrowTrendingUpIcon className="w-4 h-4" /> },
+            { name: "Problems on Ages", icon: <ArrowTrendingUpIcon className="w-4 h-4" /> },
+            { name: "Mixtures or Allegations", icon: <ArrowTrendingUpIcon className="w-4 h-4" /> },
+            { name: "Simple Interest and Compound Interest",icon: <CurrencyDollarIcon className="w-4 h-4" /> },
+            { name: "Algebra", icon: <CurrencyDollarIcon className="w-4 h-4" /> },
+            { name: "Mensuration and Geometry", icon: <CurrencyDollarIcon className="w-4 h-4" /> },
+            
         ]
     },
     Logical: {
         icon: <LightBulbIcon className="w-5 h-5" />,
         topics: [
-            { name: "Number Series", icon: <ArrowTrendingDownIcon className="w-4 h-4" /> },
-            { name: "Blood Relations", icon: <HeartIcon className="w-4 h-4 text-red-500" /> },
+            { name: "Words/Number-Series", icon: <ArrowTrendingDownIcon className="w-4 h-4" /> },
             { name: "Syllogism", icon: <CpuChipIcon className="w-4 h-4" /> },
+            { name: "Calender", icon: <CpuChipIcon className="w-4 h-4" /> },
+            { name: "Coding-Decoding", icon: <CpuChipIcon className="w-4 h-4" /> },
+            { name: "Seating Arrangements", icon: <CpuChipIcon className="w-4 h-4" /> },
+            { name: "Blood Relations", icon: <CpuChipIcon className="w-4 h-4" /> },
+            { name: "Clock", icon: <CurrencyDollarIcon className="w-4 h-4" /> },
+            { name: "Deductive Reasoning", icon: <ArrowTrendingDownIcon className="w-4 h-4" /> },
+            { name: "Data Sufficiency", icon: <HeartIcon className="w-4 h-4" /> }, 
         ]
     },
     Verbal: {
         icon: <ChatBubbleOvalLeftEllipsisIcon className="w-5 h-5" />,
         topics: [
-            { name: "Synonyms", icon: <LanguageIcon className="w-4 h-4" /> },
+            { name: "Synonyms-Antonyms", icon: <LanguageIcon className="w-4 h-4" /> },
+            { name: "Vocabulary", icon: <LanguageIcon className="w-4 h-4" /> },
+            { name: "Spelling Correction", icon: <LanguageIcon className="w-4 h-4" /> },
+            { name: "Odd One Out", icon: <LanguageIcon className="w-4 h-4" /> },
+            { name: "Fill in the Blanks", icon: <LanguageIcon className="w-4 h-4" /> },
+            { name: "Error Detection", icon: <LanguageIcon className="w-4 h-4" /> }, 
+            { name: "Sentence/Word Completion", icon: <LanguageIcon className="w-4 h-4" /> }, 
+            // { name: "Word Analogy", icon: <LanguageIcon className="w-4 h-4" /> },
+            { name: "Para Jumbles", icon: <LanguageIcon className="w-4 h-4" /> }, 
+            { name: "Idioms and Phrases", icon: <LanguageIcon className="w-4 h-4" /> }, 
+            { name: "Active-Passive Voice", icon: <LanguageIcon className="w-4 h-4" /> }, 
+            { name: "Direct-Indirect Speech", icon: <LanguageIcon className="w-4 h-4" /> }, 
+            { name: "Cloze Test", icon: <LanguageIcon className="w-4 h-4" /> }, 
             { name: "Reading Comprehension", icon: <BookOpenIcon className="w-4 h-4" /> },
         ]
-    }
+    } 
 };
 
 const Sidebar = ({ onSelectTopic, activeTopic, isMobileOpen, setIsMobileOpen, selectedCompany, onSelectCompany }) => {
-    const companies = ["TCS", "Infosys", "Wipro", "Cognizant", "Amazon", "Accenture"];
+    const companies = ["TCS", "Infosys", "IBM", "Wipro", "Persistent", "Cognizant","Capgemini", "Tech Mahindra", "Accenture", "Deloitte", "LTI Mindtree", "Amazon", "Zoho", "Oracle", ];
 
     const handleTopicClick = (topicName) => {
         onSelectTopic(topicName);
