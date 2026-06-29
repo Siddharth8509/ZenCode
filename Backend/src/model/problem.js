@@ -3,6 +3,11 @@
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 
+const requiredString = {
+    validator: (value) => value !== undefined && value !== null,
+    message: "Path `{PATH}` is required."
+};
+
 const problemSchema = new Schema({
     title: {
         type: String,
@@ -36,11 +41,11 @@ const problemSchema = new Schema({
     examples: [{
         input: {
             type: String,
-            required: true
+            validate: requiredString
         },
         output: {
             type: String,
-            required: true
+            validate: requiredString
         },
         explanation: {
             type: String,
@@ -50,21 +55,21 @@ const problemSchema = new Schema({
     visibleTestCase: [{
         input: {
             type: String,
-            required: true
+            validate: requiredString
         },
         output: {
             type: String,
-            required: true
+            validate: requiredString
         }
     }],
     hiddenTestCase: [{
         input: {
             type: String,
-            required: true
+            validate: requiredString
         },
         output: {
             type: String,
-            required: true
+            validate: requiredString
         }
     }],
     initialCode: [{

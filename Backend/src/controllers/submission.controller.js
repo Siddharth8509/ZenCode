@@ -61,6 +61,9 @@ const submitCode = async (req, res) => {
             : problemData;
 
         const hiddenTestCases = Array.isArray(resolvedProblemData.hiddenTestCase) ? resolvedProblemData.hiddenTestCase : [];
+        if (hiddenTestCases.length === 0)
+            return res.status(400).json({ message: "This problem has no hidden test cases configured. Cannot submit." });
+
         const languageId = getLanguageId(language);
         if (!languageId)
             return res.status(400).send("Unsupported language");
@@ -76,7 +79,20 @@ const submitCode = async (req, res) => {
         const executableCode = buildSourceCode(resolvedProblemData, language, code);
 
         // Uses hidden test cases per user's logic
-        const testResults = await executeCodeAndEvaluate(executableCode, languageId, hiddenTestCases);
+        let testResults;
+        try {
+            testResults = await executeCodeAndEvaluate(executableCode, languageId, hiddenTestCases);
+        } catch (judgeError) {
+            console.error("Judge0 execution failed during submit:", judgeError.message);
+            submitedProblem.status = "runtime_error";
+            submitedProblem.errorMessage = judgeError.message;
+            await submitedProblem.save();
+            return res.status(503).json({
+                message: "Code execution service is temporarily unavailable. Please try again.",
+                errorMessage: judgeError.message,
+                status: "runtime_error"
+            });
+        }
 
         let runtime = 0;
         let memory = 0;
@@ -182,8 +198,20 @@ const runCode = async (req, res) => {
         const executableCode = buildSourceCode(resolvedProblemData, language, code);
         const visibleTestCases = Array.isArray(resolvedProblemData.visibleTestCase) ? resolvedProblemData.visibleTestCase : [];
 
+        if (visibleTestCases.length === 0)
+            return res.status(400).json({ message: "This problem has no visible test cases configured. Cannot run." });
+
         // USE VISIBLE TEST CASES FOR RUN
-        const testResults = await executeCodeAndEvaluate(executableCode, languageId, visibleTestCases);
+        let testResults;
+        try {
+            testResults = await executeCodeAndEvaluate(executableCode, languageId, visibleTestCases);
+        } catch (judgeError) {
+            console.error("Judge0 execution failed during run:", judgeError.message);
+            return res.status(503).json({
+                message: "Code execution service is temporarily unavailable. Please try again.",
+                errorMessage: judgeError.message
+            });
+        }
         
         // Return detailed results as requested by user's logic
         const detailedResults = testResults.map(test => ({
@@ -200,7 +228,8 @@ const runCode = async (req, res) => {
         res.status(200).json(detailedResults);
     }
     catch (error) {
-        res.status(500).send("Internal server error" + error.message);
+        console.error("Run code error:", error);
+        res.status(500).json({ message: "Internal server error: " + error.message });
     }
 }
 

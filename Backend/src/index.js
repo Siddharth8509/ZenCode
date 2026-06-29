@@ -70,9 +70,15 @@ async function connection() {
         console.error("Database connection error:", err);
     }
 
-    app.listen(port, () => {
+    const server = app.listen(port, () => {
         console.log(`Server is running on port no. ${port}`);
     });
+
+    // Set server timeout to 60s to prevent 502s from reverse proxies
+    // during long Judge0 polling operations
+    server.timeout = 60000;
+    server.keepAliveTimeout = 65000;
+    server.headersTimeout = 66000;
 }
 
 connection();

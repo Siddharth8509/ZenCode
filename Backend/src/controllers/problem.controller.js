@@ -58,6 +58,31 @@ const createProblem = async (req, res) => {
 };
 
 /**
+ * Bulk creates multiple problems in the database without Judge0 validation.
+ * Useful for seeding the database or migrating problems.
+ */
+const createProblemsBulk = async (req, res) => {
+    try {
+        const problemsData = Array.isArray(req.body) ? req.body : req.body.problems;
+        
+        if (!Array.isArray(problemsData) || problemsData.length === 0) {
+            return res.status(400).send("Please provide an array of problems");
+        }
+
+        const problemsToInsert = problemsData.map(prob => ({
+            ...prob,
+            problemCreator: req.userId
+        }));
+
+        const inserted = await problem.insertMany(problemsToInsert);
+        return res.status(201).send(`${inserted.length} problems created successfully`);
+    } catch (error) {
+        console.error("Bulk create error:", error);
+        res.status(500).send("Internal server error: " + error.message);
+    }
+};
+
+/**
  * Fetches the full details of a specific problem by its ID.
  * Used primarily for the main problem-solving page.
  */
@@ -299,4 +324,4 @@ const getUserActivity = async (req, res) => {
     }
 };
 
-export { createProblem, getProblemById, problemFetchAll, updateProblem, solvedProblemByUser, deleteProblem, getSubmission, getUserActivity };
+export { createProblem, createProblemsBulk, getProblemById, problemFetchAll, updateProblem, solvedProblemByUser, deleteProblem, getSubmission, getUserActivity };

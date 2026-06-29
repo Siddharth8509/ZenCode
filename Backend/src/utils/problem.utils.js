@@ -13,11 +13,13 @@ const readPositiveInt = (value, fallback) => {
 
 // Configuration variables defining Judge0 behavior
 // Fallbacks are provided if environment variables are missing
-const DEFAULT_SUBMIT_RETRIES = readPositiveInt(process.env.JUDGE0_SUBMIT_RETRIES, 3);
-const DEFAULT_MAX_POLL_RETRIES = readPositiveInt(process.env.JUDGE0_MAX_POLL_RETRIES, 18);
-const INITIAL_POLL_DELAY_MS = readPositiveInt(process.env.JUDGE0_INITIAL_POLL_DELAY_MS, 2000);
-const POLL_STEP_DELAY_MS = readPositiveInt(process.env.JUDGE0_POLL_INTERVAL_MS, 2000);
-const MAX_POLL_DELAY_MS = readPositiveInt(process.env.JUDGE0_MAX_POLL_INTERVAL_MS, 5000);
+const JUDGE0_API_HOST = process.env.JUDGE0_API_HOST || "judge029.p.rapidapi.com";
+const DEFAULT_SUBMIT_RETRIES = readPositiveInt(process.env.JUDGE0_SUBMIT_RETRIES, 4);
+const DEFAULT_MAX_POLL_RETRIES = readPositiveInt(process.env.JUDGE0_MAX_POLL_RETRIES, 10);
+const INITIAL_POLL_DELAY_MS = readPositiveInt(process.env.JUDGE0_INITIAL_POLL_DELAY_MS, 1500);
+const POLL_STEP_DELAY_MS = readPositiveInt(process.env.JUDGE0_POLL_INTERVAL_MS, 1500);
+const MAX_POLL_DELAY_MS = readPositiveInt(process.env.JUDGE0_MAX_POLL_INTERVAL_MS, 3000);
+const AXIOS_TIMEOUT_MS = readPositiveInt(process.env.JUDGE0_AXIOS_TIMEOUT_MS, 15000);
 const JUDGE_RESULT_FIELDS = "status_id,time,memory,stdout,stderr,compile_output,message";
 
 /**
@@ -84,7 +86,7 @@ const decodeJudgeResult = (submissionResult) => ({
  * Takes an array of submissions objects, encodes their values to base64 for safety,
  * and submits the entire batch in one API request to Judge0. 
  * This is an optimized alternative to looping single submissions.
- * Retries on 429 rate limits.
+ * Retries on 429 rate limits and timeouts.
  */
 async function submitBatch(submission, retries = DEFAULT_SUBMIT_RETRIES) {
   if (!Array.isArray(submission) || submission.length === 0) {
@@ -100,16 +102,17 @@ async function submitBatch(submission, retries = DEFAULT_SUBMIT_RETRIES) {
 
   const options = {
     method: "POST",
-    url: "https://judge029.p.rapidapi.com/submissions/batch",
+    url: `https://${JUDGE0_API_HOST}/submissions/batch`,
     params: {
       base64_encoded: "true",
     },
     headers: {
       "x-rapidapi-key": process.env.RAPID_API_KEY,
-      "x-rapidapi-host": "judge029.p.rapidapi.com",
+      "x-rapidapi-host": JUDGE0_API_HOST,
       "Content-Type": "application/json",
     },
     data: { submissions: encodedSubmissions },
+    timeout: AXIOS_TIMEOUT_MS,
   };
 
   for (let attempt = 1; attempt <= retries; attempt++) {
@@ -117,15 +120,32 @@ async function submitBatch(submission, retries = DEFAULT_SUBMIT_RETRIES) {
       const response = await axios.request(options);
       return response.data;
     } catch (error) {
+      if (error.code === 'ECONNABORTED') {
+        console.error(`Judge0 submitBatch timed out after ${AXIOS_TIMEOUT_MS}ms (attempt ${attempt}/${retries})`);
+        if (attempt < retries) { await sleep(2000); continue; }
+        throw new Error(`Judge0 submission timed out. The service may be overloaded.`);
+      }
       if (error.response?.status === 429 && attempt < retries) {
         const waitTime = attempt * 2000;
         console.warn(`Judge0 rate limited (429). Retrying in ${waitTime / 1000}s... (attempt ${attempt}/${retries})`);
         await sleep(waitTime);
         continue;
       }
+      // Retry on 502/503 — Judge0 instance may be temporarily down
+      if ((error.response?.status === 502 || error.response?.status === 503) && attempt < retries) {
+        const waitTime = attempt * 3000;
+        console.warn(`Judge0 unavailable (${error.response.status}). Retrying in ${waitTime / 1000}s... (attempt ${attempt}/${retries})`);
+        await sleep(waitTime);
+        continue;
+      }
 
-      console.error("Judge0 submitBatch error:", error.response?.status, error.message);
-      throw error;
+      const status = error.response?.status;
+      const body = error.response?.data;
+      console.error("Judge0 submitBatch error:", status, error.message, body ? JSON.stringify(body) : '');
+      if (status === 502 || status === 503) {
+        throw new Error(`Judge0 API is currently unreachable (HTTP ${status}). The service may be down. Please try again later.`);
+      }
+      throw new Error(`Judge0 submission failed (HTTP ${status || 'unknown'}): ${error.message}`);
     }
   }
 }
@@ -134,7 +154,7 @@ async function submitBatch(submission, retries = DEFAULT_SUBMIT_RETRIES) {
  * Takes an array of tokens (from a successful submitBatch request) 
  * and repeatedly polls the Judge0 batch GET endpoint until all submissions 
  * in the batch are finished (status_id > 2).
- * Implements exponential backoff to prevent spamming the external API.
+ * Implements linear backoff to prevent spamming the external API.
  */
 async function submitToken(token, maxRetries = DEFAULT_MAX_POLL_RETRIES) {
   if (!Array.isArray(token) || token.length === 0) {
@@ -145,7 +165,7 @@ async function submitToken(token, maxRetries = DEFAULT_MAX_POLL_RETRIES) {
 
   const options = {
     method: "GET",
-    url: "https://judge029.p.rapidapi.com/submissions/batch",
+    url: `https://${JUDGE0_API_HOST}/submissions/batch`,
     params: {
       tokens: tokenStr,
       base64_encoded: "true",
@@ -153,8 +173,9 @@ async function submitToken(token, maxRetries = DEFAULT_MAX_POLL_RETRIES) {
     },
     headers: {
       "x-rapidapi-key": process.env.RAPID_API_KEY,
-      "x-rapidapi-host": "judge029.p.rapidapi.com",
+      "x-rapidapi-host": JUDGE0_API_HOST,
     },
+    timeout: AXIOS_TIMEOUT_MS,
   };
 
   let retryCount = 0;
@@ -186,6 +207,12 @@ async function submitToken(token, maxRetries = DEFAULT_MAX_POLL_RETRIES) {
       await sleep(waitTime);
       waitTime = Math.min(waitTime + POLL_STEP_DELAY_MS, MAX_POLL_DELAY_MS);
     } catch (error) {
+      if (error.code === 'ECONNABORTED') {
+        console.warn(`Judge0 polling timed out (attempt ${retryCount + 1}/${maxRetries}). Retrying...`);
+        retryCount++;
+        await sleep(waitTime);
+        continue;
+      }
       if (error.response?.status === 429) {
         waitTime = Math.min(waitTime + POLL_STEP_DELAY_MS, MAX_POLL_DELAY_MS);
         console.warn(`Judge0 rate limited (429) during polling. Waiting ${waitTime / 1000}s...`);
@@ -194,8 +221,9 @@ async function submitToken(token, maxRetries = DEFAULT_MAX_POLL_RETRIES) {
         continue;
       }
 
-      console.error("Judge0 submitToken error:", error.response?.status, error.message);
-      throw error;
+      const status = error.response?.status;
+      console.error("Judge0 submitToken error:", status, error.message);
+      throw new Error(`Judge0 polling failed (HTTP ${status || 'unknown'}): ${error.message}`);
     }
   }
 
