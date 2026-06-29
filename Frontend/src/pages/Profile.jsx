@@ -379,7 +379,7 @@ export default function Profile() {
         // Fetch the latest built resume from the resume builder
         try {
           const resumeBuilderApi = axios.create({
-            baseURL: (import.meta.env.VITE_API_BASE_URL || "http://localhost:3000") + "/resume-builder",
+            baseURL: (import.meta.env.VITE_API_BASE_URL || "http://localhost:3000").replace(/\/$/, "") + "/resume-builder",
           });
           const builtRes = await resumeBuilderApi.get("/api/resumes/list");
           const builtResumes = Array.isArray(builtRes.data?.resumes) ? builtRes.data.resumes : [];
